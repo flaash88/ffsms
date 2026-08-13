@@ -45,9 +45,10 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "ffsms.db",
             )
-                // Fremdschluessel MUESSEN aktiv sein: der Verlauf haengt daran,
-                // und das Loeschen einer Gruppe darf keine verwaisten
-                // Empfaengerzeilen hinterlassen.
+                // Bewusst ohne fallbackToDestructiveMigration: der Verlauf ist
+                // der Beleg gegen die Providerrechnung und darf bei einem
+                // Schemawechsel nicht stillschweigend verschwinden. Eine
+                // kuenftige Version braucht eine echte Migration.
                 .build()
                 .also { instance = it }
         }

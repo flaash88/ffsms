@@ -117,13 +117,19 @@ data class CampaignRecipientEntity(
     val position: Int,
 )
 
+/**
+ * Zustand eines Sendeversuchs.
+ *
+ * Es gibt bewusst keinen Zustand "uebersprungen": wenn die Duplikatsperre
+ * greift, entsteht gerade KEINE neue Zeile - die bestehende behaelt ihren
+ * echten Status. Ein Empfaenger ohne Zeile in send_log war schlicht noch
+ * nicht an der Reihe.
+ */
 enum class SendStatus {
     SENDING,
     SENT,
     DELIVERED,
     FAILED,
-    /** Uebersprungen, weil bereits ein Log-Eintrag existierte (Doppelversand verhindert). */
-    SKIPPED_DUPLICATE,
 }
 
 /**

@@ -72,10 +72,24 @@ fun GroupDetailScreen(
     var showContactPicker by remember { mutableStateOf(false) }
     var showManual by remember { mutableStateOf(false) }
 
+    var contactsDenied by remember { mutableStateOf(false) }
+
     val requestContacts = rememberPermissionGate(PermissionRequest.CONTACTS) { granted ->
         if (granted) {
             vm.loadContacts()
             showContactPicker = true
+        } else {
+            // Die App bleibt ohne Kontaktzugriff voll nutzbar - das muss der
+            // Benutzer an dieser Stelle auch erfahren, sonst wirkt die
+            // Ablehnung wie eine Sackgasse.
+            contactsDenied = true
+        }
+    }
+
+    LaunchedEffect(contactsDenied) {
+        if (contactsDenied) {
+            snackbar.showSnackbar(context.getString(R.string.import_no_contacts_permission))
+            contactsDenied = false
         }
     }
 

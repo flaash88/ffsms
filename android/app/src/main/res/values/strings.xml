@@ -14,7 +14,6 @@
     <string name="action_delete">Löschen</string>
     <string name="action_rename">Umbenennen</string>
     <string name="action_add">Hinzufügen</string>
-    <string name="action_close">Schließen</string>
 
     <!-- Verteiler -->
     <string name="groups_title">Verteiler</string>
@@ -109,7 +108,6 @@
     <string name="send_status_sent">gesendet</string>
     <string name="send_status_delivered">zugestellt</string>
     <string name="send_status_failed">fehlgeschlagen</string>
-    <string name="send_status_skipped">übersprungen (Duplikat)</string>
     <string name="send_attempt">Versuch %1$d</string>
 
     <!-- Einstellungen -->

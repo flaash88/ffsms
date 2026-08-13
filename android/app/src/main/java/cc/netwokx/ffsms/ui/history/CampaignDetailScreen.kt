@@ -198,6 +198,5 @@ private fun sendStatusLabel(status: String?): Int = when (status) {
     SendStatus.SENT.name -> R.string.send_status_sent
     SendStatus.DELIVERED.name -> R.string.send_status_delivered
     SendStatus.FAILED.name -> R.string.send_status_failed
-    SendStatus.SKIPPED_DUPLICATE.name -> R.string.send_status_skipped
     else -> R.string.send_status_pending
 }
