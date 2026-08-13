@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-ffsms}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss in .env gesetzt sein}
+      POSTGRES_DB: ${DB_NAME:-ffsms}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ffsms} -d ${DB_NAME:-ffsms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Kein Port nach aussen: die Datenbank wird ausschliesslich vom
+    # api-Container im internen Netz erreicht.
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-ffsms}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-ffsms}
+      API_KEYS: ${API_KEYS:?API_KEYS muss in .env gesetzt sein}
+      NTFY_URL: ${NTFY_URL:-}
+      NTFY_TOKEN: ${NTFY_TOKEN:-}
+      ALERT_SEGMENTS_PER_CAMPAIGN: ${ALERT_SEGMENTS_PER_CAMPAIGN:-150}
+      ALERT_SEGMENTS_PER_MONTH: ${ALERT_SEGMENTS_PER_MONTH:-1500}
+      TZ_REPORT: ${TZ_REPORT:-Europe/Vienna}
+      WEEKLY_REPORT_CRON: ${WEEKLY_REPORT_CRON:-0 20 * * 0}
+      REPORT_TITLE: ${REPORT_TITLE:-FF-SMS}
+    ports:
+      # Nur auf localhost. Nach aussen kommt der Dienst ueber Tailscale
+      # bzw. den Cloudflare Tunnel, nicht ueber einen offenen Port.
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  pgdata:
