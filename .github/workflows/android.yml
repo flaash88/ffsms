@@ -1,0 +1,62 @@
+name: Android
+
+# Baut das APK auf GitHub-Runnern, weil dort Android-SDK und Netzzugang
+# vorhanden sind. Das fertige APK haengt als Artefakt am Workflow-Lauf und
+# laesst sich von dort herunterladen und per Sideload installieren.
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Android SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      # Zuerst die Tests: die Segmentberechnung ist die Vertrauensbasis der
+      # Kostenanzeige. Ein APK, dessen Rechnung nicht stimmt, hilft niemandem.
+      - name: Unit-Tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Testberichte sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testberichte
+          path: android/app/build/reports/tests/
+          if-no-files-found: ignore
+
+      - name: Debug-APK bauen
+        run: ./gradlew assembleDebug --no-daemon
+
+      # Debug-signiert, also direkt installierbar. Die Application-ID endet
+      # auf .debug und laeuft damit parallel zu einer spaeteren Release-App.
+      - name: APK bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ff-sms-tool-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
