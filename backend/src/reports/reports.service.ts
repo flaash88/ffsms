@@ -81,8 +81,15 @@ export class ReportsService implements OnModuleInit {
     }
   }
 
-  /** Oeffentlich, damit sich der Report auch von Hand ausloesen laesst. */
-  async sendWeeklyReport(now: Date = new Date()): Promise<void> {
+  /**
+   * Oeffentlich, damit sich der Report auch von Hand ausloesen laesst.
+   *
+   * Gibt zurueck, ob ntfy die Meldung tatsaechlich angenommen hat. Ein
+   * "versendet" im Log, waehrend ntfy mit 401 abgelehnt hat, schickt bei der
+   * Fehlersuche in die falsche Richtung - man sucht dann am Handy statt beim
+   * Token.
+   */
+  async sendWeeklyReport(now: Date = new Date()): Promise<boolean> {
     const timezone = this.config.get<string>('timezone') ?? 'Europe/Vienna';
     const label = this.config.get<string>('reportTitle') ?? 'FF-SMS';
 
@@ -117,7 +124,12 @@ export class ReportsService implements OnModuleInit {
       failedCount: weekCampaigns.reduce((sum, c) => sum + c.failed, 0),
     });
 
-    await this.ntfy.send(message);
-    this.logger.log(`Wochenreport versendet: ${message.title}`);
+    const sent = await this.ntfy.send(message);
+    if (sent) {
+      this.logger.log(`Wochenreport versendet: ${message.title}`);
+    } else {
+      this.logger.error(`Wochenreport konnte nicht versendet werden: ${message.title}`);
+    }
+    return sent;
   }
 }
