@@ -411,6 +411,7 @@ lässt sich einfach nachholen, solange die Woche noch läuft.
 |---|---|
 | `curl` von außen antwortet nicht | Tunnel läuft nicht: `docker compose logs cloudflared` |
 | `502` von Cloudflare, lokal aber `200` | api-Container wurde neu erzeugt und hat eine neue IP - `docker compose restart cloudflared` bzw. `./update.sh` verwenden |
+| `502` **nur manchmal** — ein Gerät geht, das andere nicht | Zweiter cloudflared mit demselben Token, siehe unten |
 | `502` von Cloudflare, auch lokal kaputt | Public Hostname zeigt auf `localhost` statt auf `api` bzw. `ntfy` |
 | `service "ntfy" is not running` | Lokale Kopie ist aelter als der Commit mit ntfy - siehe Schritt 2, "auf den neuesten Stand bringen" |
 | Nach `git clone` liegt nur die README da | Ohne `-b claude/...` wird der Standard-Branch geholt, auf dem kein Code liegt |
@@ -425,3 +426,38 @@ lässt sich einfach nachholen, solange die Woche noch läuft.
 | `bash: 20: command not found` beim Einlesen der `.env` | Wert mit Leerzeichen ohne Anführungszeichen, siehe Schritt 7 |
 | `403` beim Upload aus der App | Geräte-Kennung in der App weicht von der in `API_KEYS` ab |
 | ntfy-Links im Handy zeigen ins Leere | `NTFY_BASE_URL` stimmt nicht mit dem Hostnamen im Tunnel überein |
+
+### Der zähe Fall: zwei cloudflared mit demselben Token
+
+Symptom: ein Handy erreicht den Server, ein anderes bekommt `502` — beide
+gleichzeitig, beide über dieselbe Adresse. Ein Neustart „hilft" scheinbar, und
+kurz darauf ist es wieder da.
+
+Ursache: cloudflared läuft zweimal mit demselben Tunnel-Token, etwa weil er vor
+dem Umstieg auf Docker schon als Systemdienst installiert war. Beide melden
+sich bei Cloudflare als Connector **desselben** Tunnels an, und Cloudflare
+verteilt die Anfragen auf beide.
+
+Bei einem Token-Tunnel kommt die Ingress-Konfiguration aus dem Dashboard, und
+dort steht `http://api:3000`. Diesen Namen gibt es nur im Docker-Netz — der
+Dienst außerhalb kann ihn nicht auflösen und antwortet mit `502`. Getroffen
+wird also nur ein Teil der Anfragen, und welcher, ist Zufall. **Ein einzelner
+erfolgreicher `curl` beweist hier nichts.**
+
+Erkennen:
+
+```bash
+ps aux | grep "[c]loudflared"      # erwartet: genau eine Zeile
+systemctl status cloudflared       # laeuft hier ein Dienst?
+```
+
+Beheben — der Container bleibt, der Dienst geht:
+
+```bash
+su -c 'systemctl disable --now cloudflared'
+```
+
+Gegenprobe im Dashboard unter **Zero Trust → Networks → Tunnels → Connectors**:
+dort dürfen nur die Verbindungen eines einzigen Rechners stehen.
+
+`./update.sh` prüft das inzwischen bei jedem Durchlauf mit.

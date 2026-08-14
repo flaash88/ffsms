@@ -16,6 +16,32 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+check_doppelter_tunnel() {
+    # Zwei cloudflared mit demselben Token melden sich als zwei Connector
+    # desselben Tunnels an, und Cloudflare verteilt die Anfragen auf beide.
+    # Die Ingress-Konfiguration kommt bei Token-Tunneln aus dem Dashboard und
+    # zeigt auf "http://api:3000" - ein Name, den nur der Container aufloesen
+    # kann. Ein cloudflared ausserhalb von Docker antwortet darum mit 502.
+    #
+    # Der Fehler ist deshalb so zaeh, weil er nur jede zweite Anfrage trifft:
+    # ein Geraet geht, das naechste nicht, ein Neustart "hilft" scheinbar. Wer
+    # das nicht weiss, sucht tagelang am Backend.
+    local anzahl
+    anzahl="$(ps -eo comm= 2>/dev/null | grep -c '^cloudflared$' || true)"
+    [ "${anzahl:-0}" -le 1 ] && return 0
+
+    echo
+    echo "ACHTUNG: $anzahl cloudflared-Prozesse laufen."
+    ps aux | grep '[c]loudflared' || true
+    echo
+    echo "Erwartet ist genau einer - der im Container. Laeuft daneben noch ein"
+    echo "Dienst auf dem Server, antwortet dieser mit 502, und zwar nur bei"
+    echo "einem Teil der Anfragen. Abschalten mit:"
+    echo
+    echo "    su -c 'systemctl disable --now cloudflared'"
+    echo
+}
+
 docker compose --profile tunnel up -d --build
 
 echo
@@ -61,6 +87,10 @@ if docker compose ps --services --status running | grep -q '^cloudflared$'; then
             echo "     Pruefen: docker compose logs cloudflared --tail=30"
         fi
     fi
+
+    # Auch bei HTTP 200 pruefen: ein zweiter Connector trifft nur einen Teil
+    # der Anfragen. Ein einzelner erfolgreicher Aufruf beweist hier nichts.
+    check_doppelter_tunnel
 fi
 
 docker compose ps
