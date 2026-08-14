@@ -153,6 +153,13 @@
     <string name="perm_continue">Weiter</string>
     <string name="perm_deny">Nicht jetzt</string>
 
+    <string name="perm_denied_title">Berechtigung nicht erteilt</string>
+    <string name="perm_open_settings">Einstellungen öffnen</string>
+    <string name="action_later">Später</string>
+    <string name="perm_denied_sms">Android hat die Berechtigung nicht erteilt. Ohne sie kann die App keine SMS versenden.\n\nWurde die Anfrage zweimal abgelehnt, fragt Android nicht mehr nach — die Berechtigung muss dann von Hand gesetzt werden:\n\nEinstellungen → Apps → FF-SMS-Tool → Berechtigungen → SMS → Zulassen\n\nErscheint „SMS" dort nicht oder lässt sich nicht einschalten, sperrt der Gerätehersteller den SMS-Versand für Apps, die nicht aus dem Play Store stammen. Das lässt sich in der App nicht umgehen.</string>
+    <string name="perm_denied_contacts">Android hat den Kontaktzugriff nicht erteilt. Die App bleibt nutzbar — Nummern lassen sich weiterhin von Hand eingeben.\n\nSoll die Auswahl aus dem Adressbuch doch funktionieren:\n\nEinstellungen → Apps → FF-SMS-Tool → Berechtigungen → Kontakte → Zulassen</string>
+    <string name="perm_denied_notifications">Android hat die Benachrichtigungen nicht erteilt. Der Versand funktioniert weiterhin, läuft aber unsichtbar im Hintergrund — Abbrüche und Fehler werden nicht gemeldet.\n\nEinstellungen → Apps → FF-SMS-Tool → Benachrichtigungen</string>
+
     <!-- Datenschutz -->
     <string name="privacy_title">Datenschutz</string>
     <string name="privacy_intro">Diese App überträgt Verbrauchszahlen an ein selbst betriebenes Backend, damit die SMS-Kosten nachvollziehbar bleiben. Der Zweck ist Kostenkontrolle, nicht die Kontrolle von Personen.\n\nDie Übertragung ist standardmäßig ausgeschaltet und muss in den Einstellungen aktiv eingeschaltet werden.</string>

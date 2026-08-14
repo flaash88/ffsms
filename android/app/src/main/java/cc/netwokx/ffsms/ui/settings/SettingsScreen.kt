@@ -1,6 +1,5 @@
 package cc.netwokx.ffsms.ui.settings
 
-import android.Manifest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -44,9 +44,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.ui.permissions.PermissionRequest
-import cc.netwokx.ffsms.ui.permissions.hasNotificationPermission
-import cc.netwokx.ffsms.ui.permissions.hasPermission
+import cc.netwokx.ffsms.ui.permissions.openAppSettings
 import cc.netwokx.ffsms.ui.permissions.rememberPermissionGate
+import cc.netwokx.ffsms.ui.permissions.rememberPermissionStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,17 +189,14 @@ fun SettingsScreen(
 
             PermissionRow(
                 label = stringResource(R.string.settings_perm_sms),
-                granted = hasPermission(context, Manifest.permission.SEND_SMS),
                 request = PermissionRequest.SMS,
             )
             PermissionRow(
                 label = stringResource(R.string.settings_perm_contacts),
-                granted = hasPermission(context, Manifest.permission.READ_CONTACTS),
                 request = PermissionRequest.CONTACTS,
             )
             PermissionRow(
                 label = stringResource(R.string.settings_perm_notifications),
-                granted = hasNotificationPermission(context),
                 request = PermissionRequest.NOTIFICATIONS,
             )
         }
@@ -270,20 +267,28 @@ private fun NumberField(
     }
 }
 
+/**
+ * Zeile je Berechtigung.
+ *
+ * Der Status kommt aus [rememberPermissionStatus] und wird bei jedem
+ * ON_RESUME neu geprueft. Dadurch springt die Zeile auf "erteilt", sobald
+ * der Benutzer aus den Systemeinstellungen zurueckkehrt.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PermissionRow(label: String, granted: Boolean, request: PermissionRequest) {
-    var refreshed by remember { mutableStateOf(granted) }
-    val gate = rememberPermissionGate(request) { result -> refreshed = result }
+private fun PermissionRow(label: String, request: PermissionRequest) {
+    val context = LocalContext.current
+    val granted = rememberPermissionStatus(request)
+    val gate = rememberPermissionGate(request) { }
 
     ListItem(
         headlineContent = { Text(label) },
         supportingContent = {
             Text(
                 stringResource(
-                    if (granted || refreshed) R.string.settings_perm_granted else R.string.settings_perm_missing,
+                    if (granted) R.string.settings_perm_granted else R.string.settings_perm_missing,
                 ),
-                color = if (granted || refreshed) {
+                color = if (granted) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 } else {
                     MaterialTheme.colorScheme.error
@@ -291,8 +296,18 @@ private fun PermissionRow(label: String, granted: Boolean, request: PermissionRe
             )
         },
         trailingContent = {
-            if (!granted && !refreshed) {
-                OutlinedButton(onClick = gate) { Text(stringResource(R.string.settings_perm_request)) }
+            if (!granted) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = gate) {
+                        Text(stringResource(R.string.settings_perm_request))
+                    }
+                    // Zweiter Weg fuer den Fall, dass Android gar nicht mehr
+                    // fragt. Ohne ihn bleibt "Anfordern" wirkungslos und der
+                    // Benutzer sitzt fest.
+                    TextButton(onClick = { openAppSettings(context) }) {
+                        Text(stringResource(R.string.perm_open_settings))
+                    }
+                }
             }
         },
     )
