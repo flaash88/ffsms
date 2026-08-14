@@ -304,6 +304,34 @@ adb install -r app-release.apk
 5. Die Freigabe danach wieder abschalten — sie wird nur für die Installation
    gebraucht.
 
+### „App wurde Zugriff verweigert" beim Erteilen der SMS-Berechtigung
+
+Kommt beim Freigeben von **SMS** eine Meldung mit blauem Schild-Symbol und dem
+Text *„App wurde Zugriff verweigert"*, ist das **nicht** die App und auch keine
+Sperre des Herstellers, sondern Androids Schutz **„Eingeschränkte
+Einstellungen"**. Ab Android 13 blockiert er besonders sensible Berechtigungen —
+darunter SMS — für Apps, die über einen Dateimanager installiert wurden.
+
+Freigeben:
+
+1. **Einstellungen → Apps → FF-SMS-Tool**
+2. Oben rechts das **Menü (drei Punkte ⋮)**
+3. **„Eingeschränkte Einstellungen zulassen"**
+4. Zurück zu **Berechtigungen → SMS → Zulassen**
+
+Der Menüpunkt in Schritt 3 taucht nur auf, wenn Android die Sperre für diese App
+tatsächlich gesetzt hat.
+
+**Sauberer ist der Weg über USB**, weil die Sperre dabei gar nicht entsteht —
+`adb` installiert sitzungsbasiert, und darauf zielt der Schutz nicht ab:
+
+```bash
+adb install -r app-debug.apk
+```
+
+Für das Gerät, das später die echten Alarme versendet, ist das der empfohlene
+Weg.
+
 **Beim ersten Start:**
 
 1. **Verteiler** → Gruppe anlegen → Empfänger hinzufügen (aus den Kontakten
