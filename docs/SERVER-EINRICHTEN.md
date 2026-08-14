@@ -94,11 +94,28 @@ Erscheint „Hello from Docker!", ist alles bereit.
 
 ## Schritt 2 — Projekt holen
 
+Der Code liegt im Branch `claude/ff-sms-verteiler-app-ifodkw`, **nicht** auf
+`main`. Der Branch muss deshalb ausdrücklich angegeben werden — ein `git clone`
+ohne `-b` holt den Standard-Branch und damit nur die README:
+
 ```bash
 mkdir -p ~/ffsms && cd ~/ffsms
-git clone https://github.com/flaash88/ffsms.git .
+git clone -b claude/ff-sms-verteiler-app-ifodkw https://github.com/flaash88/ffsms.git .
 cd backend
 ```
+
+**Später auf den neuesten Stand bringen:**
+
+```bash
+cd ~/ffsms
+git fetch origin
+git checkout -B claude/ff-sms-verteiler-app-ifodkw origin/claude/ff-sms-verteiler-app-ifodkw
+cd backend && docker compose --profile tunnel up -d --build
+```
+
+Die `.env` überlebt das, weil sie nicht versioniert ist. Kamen mit dem Update
+neue Pflichtfelder dazu, bricht der Start mit einer Meldung ab, die das
+fehlende Feld benennt — dann `.env.example` gegenprüfen.
 
 ---
 
@@ -289,7 +306,9 @@ docker compose logs -f api
 docker compose up -d
 
 # Auf neuen Stand bringen
-git pull && docker compose --profile tunnel up -d --build
+cd ~/ffsms && git fetch origin \
+  && git checkout -B claude/ff-sms-verteiler-app-ifodkw origin/claude/ff-sms-verteiler-app-ifodkw \
+  && cd backend && docker compose --profile tunnel up -d --build
 
 # Datenbank sichern (regelmäßig! z. B. per cron)
 docker compose exec -T db pg_dump -U ffsms ffsms | gzip > ~/ffsms-$(date +%F).sql.gz
@@ -307,6 +326,8 @@ schlicht warten und die Logs beobachten.
 |---|---|
 | `curl` von außen antwortet nicht | Tunnel läuft nicht: `docker compose logs cloudflared` |
 | `502` von Cloudflare | Public Hostname zeigt auf `localhost` statt auf `api` bzw. `ntfy` |
+| `service "ntfy" is not running` | Lokale Kopie ist aelter als der Commit mit ntfy - siehe Schritt 2, "auf den neuesten Stand bringen" |
+| Nach `git clone` liegt nur die README da | Ohne `-b claude/...` wird der Standard-Branch geholt, auf dem kein Code liegt |
 | `sudo: command not found` | Minimal-Installation ohne sudo - siehe Schritt 0 |
 | `usermod: command not found` | `/usr/sbin` fehlt im Suchpfad: `su -` mit Bindestrich verwenden |
 | `docker: permission denied` | Nach `usermod -aG docker` nicht neu angemeldet |
