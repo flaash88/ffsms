@@ -14,7 +14,6 @@ datastore = "1.1.1"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 kotlinxSerialization = "1.6.3"
-retrofitSerialization = "1.0.0"
 libphonenumber = "8.13.42"
 coroutines = "1.8.1"
 junit = "4.13.2"
@@ -46,7 +45,9 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit-kotlinx-serialization = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofitSerialization" }
+# Squares offizieller Converter. Der frueher uebliche von JakeWharton ist mit
+# 1.0.0 nur noch ein Verweis hierher und enthaelt keine Klassen mehr.
+retrofit-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
