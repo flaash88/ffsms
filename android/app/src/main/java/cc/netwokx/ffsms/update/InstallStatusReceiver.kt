@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
+import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.notify.Notifications
 
 /**
@@ -41,8 +42,35 @@ class InstallStatusReceiver : BroadcastReceiver() {
 
             else -> {
                 val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
-                Notifications.updateFailed(context, message ?: "Fehlercode $status")
+                Notifications.updateFailed(context, explain(context, status, message))
             }
         }
+    }
+
+    /**
+     * Uebersetzt die Meldung des Systems in etwas Handlungsfaehiges.
+     *
+     * Die Rohmeldungen sind fuer den Betreiber eines Feuerwehrhandys nicht zu
+     * gebrauchen: "INSTALL_FAILED_VERIFICATION_FAILURE" klingt nach einem
+     * Problem mit der Signatur, kommt aber von Google Play Protect und hat mit
+     * dem Keystore nichts zu tun. Wer das nicht weiss, sucht an der voellig
+     * falschen Stelle - naemlich beim Keystore, dem einzigen Teil des Systems,
+     * der sich nicht gefahrlos anfassen laesst.
+     */
+    private fun explain(context: Context, status: Int, raw: String?): String = when {
+        raw?.contains("VERIFICATION_FAILURE", ignoreCase = true) == true ->
+            context.getString(R.string.install_error_verification)
+
+        raw?.contains("UPDATE_INCOMPATIBLE", ignoreCase = true) == true ||
+            raw?.contains("INCONSISTENT_CERTIFICATES", ignoreCase = true) == true ->
+            context.getString(R.string.install_error_signature)
+
+        raw?.contains("INSUFFICIENT_STORAGE", ignoreCase = true) == true ->
+            context.getString(R.string.install_error_storage)
+
+        status == PackageInstaller.STATUS_FAILURE_ABORTED ->
+            context.getString(R.string.install_error_aborted)
+
+        else -> raw ?: context.getString(R.string.install_error_generic, status)
     }
 }

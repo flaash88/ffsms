@@ -235,6 +235,12 @@
     <string name="notif_update_text">Version %1$s liegt bereit. Installation über Einstellungen → App-Version.</string>
     <string name="notif_update_done_title">Update installiert</string>
     <string name="notif_update_done_text">Die App läuft jetzt in der neuen Version.</string>
+    <string name="install_error_verification">Google Play Protect hat die Installation blockiert. Das liegt NICHT an der Signatur der App.\n\nSo geht es weiter:\n1. Play Store öffnen → Profilbild oben rechts → Play Protect\n2. Zahnrad oben rechts → „Apps mit Play Protect scannen" ausschalten\n3. Update erneut installieren\n4. Play Protect danach wieder einschalten</string>
+    <string name="install_error_signature">Die Signatur des Updates passt nicht zur installierten App. Das Update stammt aus einem anderen Keystore.\n\nDie App müsste dafür deinstalliert werden — dabei gehen Verteiler und Verlauf verloren. Bitte erst klären, welches APK das richtige ist.</string>
+    <string name="install_error_storage">Zu wenig Speicherplatz auf dem Gerät.</string>
+    <string name="install_error_aborted">Installation abgebrochen.</string>
+    <string name="install_error_generic">Installation fehlgeschlagen (Code %1$d).</string>
+
     <string name="notif_update_failed_title">Update fehlgeschlagen</string>
     <string name="notif_update_failed_text">%1$s</string>
 
