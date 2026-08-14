@@ -5,6 +5,8 @@ import cc.netwokx.ffsms.data.db.GroupEntity
 import cc.netwokx.ffsms.data.db.GroupWithCount
 import cc.netwokx.ffsms.data.db.RecipientDao
 import cc.netwokx.ffsms.data.db.RecipientEntity
+import cc.netwokx.ffsms.data.contacts.ContactsReader
+import cc.netwokx.ffsms.data.contacts.DeviceContactGroup
 import cc.netwokx.ffsms.domain.phone.PhoneNormalizer
 import kotlinx.coroutines.flow.Flow
 
@@ -25,9 +27,27 @@ data class ImportResult(
     val hasProblems: Boolean get() = duplicates > 0 || invalid.isNotEmpty()
 }
 
+/**
+ * Ergebnis eines Abgleichs mit einer Kontaktgruppe.
+ *
+ * @param added neu hinzugekommene Empfaenger
+ * @param missing Empfaenger, die nicht mehr in der Kontaktgruppe stehen
+ * @param unchanged unveraendert uebernommene
+ * @param skipped leer, wenn der Abgleich lief; sonst der Grund fuer den Abbruch
+ */
+data class ContactSyncResult(
+    val added: Int,
+    val missing: Int,
+    val unchanged: Int,
+    val skipped: String? = null,
+) {
+    val ran: Boolean get() = skipped == null
+}
+
 class GroupRepository(
     private val groupDao: GroupDao,
     private val recipientDao: RecipientDao,
+    private val contactsReader: ContactsReader,
     private val normalizer: PhoneNormalizer = PhoneNormalizer(),
 ) {
 
@@ -51,6 +71,114 @@ class GroupRepository(
 
     suspend fun validRecipients(groupId: Long): List<RecipientEntity> =
         recipientDao.validForGroup(groupId)
+
+    // --- Kontaktgruppen ---------------------------------------------------
+
+    suspend fun availableContactGroups(): List<DeviceContactGroup> =
+        contactsReader.loadContactGroups()
+
+    /** Verknuepft einen Verteiler mit einer Kontaktgruppe und gleicht sofort ab. */
+    suspend fun linkContactGroup(
+        groupId: Long,
+        contactGroup: DeviceContactGroup,
+        autoSync: Boolean,
+    ): ContactSyncResult {
+        groupDao.linkContactGroup(groupId, contactGroup.id, contactGroup.title, autoSync)
+        return syncContactGroup(groupId)
+    }
+
+    suspend fun unlinkContactGroup(groupId: Long) {
+        groupDao.linkContactGroup(groupId, null, null, false)
+        // Die Empfaenger bleiben - sie wurden ja bewusst aufgenommen. Nur die
+        // Verknuepfung geht weg.
+        recipientDao.allForGroup(groupId)
+            .filter { it.missingInContactGroup }
+            .forEach { recipientDao.setMissing(it.id, false) }
+    }
+
+    suspend fun setAutoSync(groupId: Long, enabled: Boolean) =
+        groupDao.setAutoSync(groupId, enabled)
+
+    suspend fun countMissing(groupId: Long): Int = recipientDao.countMissing(groupId)
+
+    /** Entfernt die als "nicht mehr in der Kontaktgruppe" markierten Empfaenger. */
+    suspend fun removeMissing(groupId: Long) = recipientDao.deleteMissing(groupId)
+
+    /**
+     * Gleicht einen Verteiler mit seiner Kontaktgruppe ab.
+     *
+     * Neue Mitglieder kommen automatisch dazu - das ist der Zweck der Uebung.
+     * Wer nicht mehr in der Kontaktgruppe steht, wird NUR MARKIERT und nicht
+     * entfernt: ein Verteiler, der sich von allein leert, weil die
+     * Kontakte-Synchronisation gerade klemmt oder ein Konto abgemeldet wurde,
+     * waere bei einer Alarmierung der schlimmste denkbare Fehler. Das
+     * Entfernen bleibt eine bewusste Entscheidung.
+     *
+     * Aus demselben Grund bricht der Abgleich ab, wenn die Kontaktgruppe
+     * ueberhaupt keine Mitglieder mehr liefert - das ist fast immer ein
+     * technisches Problem und keine echte Aenderung.
+     */
+    suspend fun syncContactGroup(groupId: Long): ContactSyncResult {
+        val group = groupDao.findById(groupId)
+            ?: return ContactSyncResult(0, 0, 0, "Verteiler nicht gefunden")
+        val contactGroupId = group.contactGroupId
+            ?: return ContactSyncResult(0, 0, 0, "Keine Kontaktgruppe verknuepft")
+
+        val members = contactsReader.loadContactsInGroup(contactGroupId)
+        val existing = recipientDao.allForGroup(groupId)
+
+        if (members.isEmpty() && existing.isNotEmpty()) {
+            return ContactSyncResult(
+                0, 0, existing.size,
+                "Kontaktgruppe lieferte keine Mitglieder - Abgleich uebersprungen",
+            )
+        }
+
+        val normalizedMembers = members
+            .map { it to normalizer.normalize(it.number) }
+            .associate { (contact, normalized) -> normalized.storageValue to contact }
+
+        var added = 0
+        val now = System.currentTimeMillis()
+
+        for ((msisdn, contact) in normalizedMembers) {
+            val normalized = normalizer.normalize(contact.number)
+            val rowId = recipientDao.insertIgnoringDuplicates(
+                RecipientEntity(
+                    groupId = groupId,
+                    msisdn = msisdn,
+                    displayName = contact.displayName,
+                    valid = normalized.isValid,
+                    addedAt = now,
+                    fromContactGroup = true,
+                ),
+            )
+            if (rowId != -1L) added++
+        }
+
+        var missing = 0
+        for (recipient in existing) {
+            val stillThere = normalizedMembers.containsKey(recipient.msisdn)
+            if (!stillThere && recipient.fromContactGroup) {
+                if (!recipient.missingInContactGroup) recipientDao.setMissing(recipient.id, true)
+                missing++
+            } else if (stillThere && recipient.missingInContactGroup) {
+                // Wieder aufgetaucht - Markierung zuruecknehmen.
+                recipientDao.setMissing(recipient.id, false)
+            }
+        }
+
+        groupDao.markSynced(groupId, now)
+        return ContactSyncResult(
+            added = added,
+            missing = missing,
+            unchanged = normalizedMembers.size - added,
+        )
+    }
+
+    /** Alle Verteiler mit eingeschaltetem Abgleich. Fuer den taeglichen Worker. */
+    suspend fun autoSyncAll(): Map<String, ContactSyncResult> =
+        groupDao.autoSyncGroups().associate { it.name to syncContactGroup(it.id) }
 
     /**
      * Importiert Kontakte in eine Gruppe.

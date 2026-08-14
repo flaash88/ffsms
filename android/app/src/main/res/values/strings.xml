@@ -35,6 +35,29 @@
     <string name="group_detail_invalid_badge">ungültig</string>
     <string name="group_detail_invalid_hint">Ungültige Nummern werden beim Versand übersprungen.</string>
 
+    <string name="contactgroup_choose">Aus Kontaktgruppe</string>
+    <string name="contactgroup_choose_hint">Wähle ein Label aus deinen Kontakten. Der Verteiler übernimmt alle Mitglieder — und beim Abgleich auch alle, die später dazukommen.</string>
+    <string name="contactgroup_none">Keine Kontaktgruppen gefunden. In Google Kontakte heißen sie „Labels"; Systemgruppen und leere Gruppen werden nicht angezeigt.</string>
+    <string name="contactgroup_members">%1$d Mitglieder</string>
+    <string name="contactgroup_link">Verknüpfen</string>
+    <string name="contactgroup_unlink">Verknüpfung lösen</string>
+    <string name="contactgroup_linked">Verknüpft mit Kontaktgruppe „%1$s"</string>
+    <string name="contactgroup_autosync">Täglich abgleichen</string>
+    <string name="contactgroup_autosync_desc">Neue Mitglieder der Kontaktgruppe kommen automatisch dazu.</string>
+    <string name="contactgroup_sync_now">Jetzt abgleichen</string>
+    <string name="contactgroup_syncing">Gleiche ab…</string>
+    <string name="contactgroup_sync_added">%1$d neu übernommen</string>
+    <string name="contactgroup_sync_missing">, %1$d nicht mehr in der Kontaktgruppe</string>
+    <string name="contactgroup_sync_skipped">Abgleich übersprungen: %1$s</string>
+    <string name="contactgroup_missing_badge">nicht mehr in Gruppe</string>
+    <string name="contactgroup_missing_hint">%1$d Empfänger stehen nicht mehr in der Kontaktgruppe. Sie bekommen weiterhin SMS — entfernt wird niemand automatisch.</string>
+    <string name="contactgroup_missing_remove">%1$d Empfänger entfernen</string>
+
+    <string name="notif_contactsync_title">Verteiler abgeglichen</string>
+    <string name="notif_contactsync_added">%1$d neue Empfänger übernommen</string>
+    <string name="notif_contactsync_missing">%1$d stehen nicht mehr in der Kontaktgruppe</string>
+    <string name="notif_contactsync_skipped">%1$d Verteiler übersprungen — bitte in der App nachsehen</string>
+
     <string name="import_result">%1$d hinzugefügt</string>
     <string name="import_result_duplicates">, %1$d Duplikate übersprungen</string>
     <string name="import_result_invalid">, %1$d ungültig</string>

@@ -17,6 +17,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Dialpad
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -29,6 +31,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.data.contacts.DeviceContact
+import cc.netwokx.ffsms.data.contacts.DeviceContactGroup
 import cc.netwokx.ffsms.ui.permissions.PermissionRequest
 import cc.netwokx.ffsms.ui.permissions.hasPermission
 import cc.netwokx.ffsms.ui.permissions.rememberPermissionGate
@@ -71,6 +77,7 @@ fun GroupDetailScreen(
 
     var showContactPicker by remember { mutableStateOf(false) }
     var showManual by remember { mutableStateOf(false) }
+    var showGroupPicker by remember { mutableStateOf(false) }
 
     var contactsDenied by remember { mutableStateOf(false) }
 
@@ -91,6 +98,22 @@ fun GroupDetailScreen(
             snackbar.showSnackbar(context.getString(R.string.import_no_contacts_permission))
             contactsDenied = false
         }
+    }
+
+    LaunchedEffect(state.lastSync) {
+        val result = state.lastSync ?: return@LaunchedEffect
+        val text = if (!result.ran) {
+            context.getString(R.string.contactgroup_sync_skipped, result.skipped.orEmpty())
+        } else {
+            buildString {
+                append(context.getString(R.string.contactgroup_sync_added, result.added))
+                if (result.missing > 0) {
+                    append(context.getString(R.string.contactgroup_sync_missing, result.missing))
+                }
+            }
+        }
+        snackbar.showSnackbar(text)
+        vm.syncShown()
     }
 
     LaunchedEffect(state.lastImport) {
@@ -146,6 +169,31 @@ fun GroupDetailScreen(
                 }
             }
 
+            Row(modifier = Modifier.padding(horizontal = 16.dp)) {
+                OutlinedButton(onClick = {
+                    if (hasPermission(context, Manifest.permission.READ_CONTACTS)) {
+                        vm.loadContactGroups()
+                        showGroupPicker = true
+                    } else {
+                        requestContacts()
+                    }
+                }) {
+                    Icon(Icons.Default.Group, contentDescription = null)
+                    Text(stringResource(R.string.contactgroup_choose))
+                }
+            }
+
+            ContactGroupCard(
+                linked = state.linkedContactGroup,
+                autoSync = state.autoSync,
+                syncing = state.syncing,
+                missingCount = state.missingCount,
+                onSyncNow = vm::syncNow,
+                onAutoSyncChanged = vm::setAutoSync,
+                onUnlink = vm::unlinkContactGroup,
+                onRemoveMissing = vm::removeMissing,
+            )
+
             Text(
                 text = stringResource(R.string.groups_recipient_count, state.recipients.count { it.valid }),
                 style = MaterialTheme.typography.titleMedium,
@@ -197,6 +245,12 @@ fun GroupDetailScreen(
                                         label = { Text(stringResource(R.string.group_detail_invalid_badge)) },
                                     )
                                 }
+                                if (recipient.missingInContactGroup) {
+                                    AssistChip(
+                                        onClick = {},
+                                        label = { Text(stringResource(R.string.contactgroup_missing_badge)) },
+                                    )
+                                }
                                 IconButton(onClick = { vm.deleteRecipient(recipient.id) }) {
                                     Icon(
                                         Icons.Default.Delete,
@@ -219,6 +273,18 @@ fun GroupDetailScreen(
             onConfirm = { selected ->
                 vm.importContacts(selected)
                 showContactPicker = false
+            },
+        )
+    }
+
+    if (showGroupPicker) {
+        ContactGroupPickerDialog(
+            groups = state.contactGroups,
+            loading = state.contactGroupsLoading,
+            onDismiss = { showGroupPicker = false },
+            onConfirm = { group, autoSync ->
+                vm.linkContactGroup(group, autoSync)
+                showGroupPicker = false
             },
         )
     }
@@ -353,6 +419,173 @@ private fun ManualNumberDialog(
                 onClick = { onConfirm(numbers, name.takeIf { it.isNotBlank() }) },
                 enabled = numbers.isNotBlank(),
             ) { Text(stringResource(R.string.action_add)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+/**
+ * Zeigt die verknuepfte Kontaktgruppe und was der letzte Abgleich ergab.
+ *
+ * Der Hinweis auf fehlende Empfaenger ist bewusst prominent: sie werden vom
+ * Abgleich nur markiert, nie automatisch entfernt. Ein Alarmierungsverteiler,
+ * der sich still verkleinert, waere der schlimmste denkbare Fehler - also muss
+ * ein Mensch die Entscheidung treffen, und dafuer muss er sie sehen.
+ */
+@Composable
+private fun ContactGroupCard(
+    linked: String?,
+    autoSync: Boolean,
+    syncing: Boolean,
+    missingCount: Int,
+    onSyncNow: () -> Unit,
+    onAutoSyncChanged: (Boolean) -> Unit,
+    onUnlink: () -> Unit,
+    onRemoveMissing: () -> Unit,
+) {
+    if (linked == null) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (missingCount > 0) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.contactgroup_linked, linked),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.contactgroup_autosync))
+                    Text(
+                        stringResource(R.string.contactgroup_autosync_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(checked = autoSync, onCheckedChange = onAutoSyncChanged)
+            }
+
+            if (missingCount > 0) {
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.contactgroup_missing_hint, missingCount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                TextButton(onClick = onRemoveMissing) {
+                    Text(stringResource(R.string.contactgroup_missing_remove, missingCount))
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onSyncNow, enabled = !syncing) {
+                    Icon(Icons.Default.Sync, contentDescription = null)
+                    Text(
+                        stringResource(
+                            if (syncing) R.string.contactgroup_syncing else R.string.contactgroup_sync_now,
+                        ),
+                    )
+                }
+                TextButton(onClick = onUnlink) {
+                    Text(stringResource(R.string.contactgroup_unlink))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Auswahl einer Kontaktgruppe.
+ *
+ * Gezeigt werden nur selbst angelegte Labels mit mindestens einem Mitglied -
+ * Systemgruppen wie "Markiert in Android" waeren als Verteiler wertlos.
+ */
+@Composable
+private fun ContactGroupPickerDialog(
+    groups: List<DeviceContactGroup>,
+    loading: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (DeviceContactGroup, Boolean) -> Unit,
+) {
+    var selected by remember { mutableStateOf<DeviceContactGroup?>(null) }
+    var autoSync by remember { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.contactgroup_choose)) },
+        text = {
+            Column {
+                Text(
+                    stringResource(R.string.contactgroup_choose_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                when {
+                    loading -> Box(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) { CircularProgressIndicator() }
+
+                    groups.isEmpty() -> Text(
+                        stringResource(R.string.contactgroup_none),
+                        modifier = Modifier.padding(vertical = 16.dp),
+                    )
+
+                    else -> LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                        items(groups, key = { it.id }) { group ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = selected?.id == group.id,
+                                    onCheckedChange = { checked ->
+                                        selected = if (checked) group else null
+                                    },
+                                )
+                                Column {
+                                    Text(group.title, style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        listOfNotNull(
+                                            stringResource(
+                                                R.string.contactgroup_members,
+                                                group.memberCount,
+                                            ),
+                                            group.accountName,
+                                        ).joinToString(" · "),
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (groups.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = autoSync, onCheckedChange = { autoSync = it })
+                        Text(
+                            stringResource(R.string.contactgroup_autosync),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { selected?.let { onConfirm(it, autoSync) } },
+                enabled = selected != null,
+            ) { Text(stringResource(R.string.contactgroup_link)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }

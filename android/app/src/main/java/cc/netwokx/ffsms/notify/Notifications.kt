@@ -114,6 +114,27 @@ object Notifications {
         high = true,
     )
 
+    fun contactSync(context: Context, added: Int, missing: Int, skipped: Int) {
+        val text = buildString {
+            if (added > 0) append(context.getString(R.string.notif_contactsync_added, added))
+            if (missing > 0) {
+                if (isNotEmpty()) append("\n")
+                append(context.getString(R.string.notif_contactsync_missing, missing))
+            }
+            if (skipped > 0) {
+                if (isNotEmpty()) append("\n")
+                append(context.getString(R.string.notif_contactsync_skipped, skipped))
+            }
+        }
+        notify(
+            context,
+            title = context.getString(R.string.notif_contactsync_title),
+            text = text,
+            // Fehlende Empfaenger sind wichtig genug, um aufzufallen.
+            high = missing > 0 || skipped > 0,
+        )
+    }
+
     private fun notify(context: Context, title: String, text: String, high: Boolean) {
         ensureChannels(context)
         val notification = NotificationCompat.Builder(context, if (high) CHANNEL_RESULT else CHANNEL_SENDING)

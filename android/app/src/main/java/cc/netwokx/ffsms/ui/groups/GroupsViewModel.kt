@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import cc.netwokx.ffsms.app.ServiceLocator
 import cc.netwokx.ffsms.data.contacts.ContactsReader
 import cc.netwokx.ffsms.data.contacts.DeviceContact
+import cc.netwokx.ffsms.data.contacts.DeviceContactGroup
+import cc.netwokx.ffsms.data.db.GroupEntity
+import cc.netwokx.ffsms.data.repo.ContactSyncResult
 import cc.netwokx.ffsms.data.db.GroupWithCount
 import cc.netwokx.ffsms.data.db.RecipientEntity
 import cc.netwokx.ffsms.data.repo.ImportResult
@@ -49,12 +52,22 @@ class GroupsViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 data class GroupDetailUiState(
-    val groupName: String = "",
+    val group: GroupEntity? = null,
     val recipients: List<RecipientEntity> = emptyList(),
     val contacts: List<DeviceContact> = emptyList(),
     val contactsLoading: Boolean = false,
     val lastImport: ImportResult? = null,
-)
+    /** Verfuegbare Kontaktgruppen, geladen wenn der Auswahldialog geoeffnet wird. */
+    val contactGroups: List<DeviceContactGroup> = emptyList(),
+    val contactGroupsLoading: Boolean = false,
+    val lastSync: ContactSyncResult? = null,
+    val syncing: Boolean = false,
+) {
+    val groupName: String get() = group?.name.orEmpty()
+    val linkedContactGroup: String? get() = group?.contactGroupTitle
+    val autoSync: Boolean get() = group?.autoSyncContacts == true
+    val missingCount: Int get() = recipients.count { it.missingInContactGroup }
+}
 
 class GroupDetailViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -69,13 +82,67 @@ class GroupDetailViewModel(app: Application) : AndroidViewModel(app) {
     fun bind(id: Long) {
         if (groupId == id) return
         groupId = id
-        viewModelScope.launch {
-            _state.update { it.copy(groupName = repo.findGroup(id)?.name.orEmpty()) }
-        }
+        refreshGroup()
         viewModelScope.launch {
             repo.observeRecipients(id).collect { list -> _state.update { it.copy(recipients = list) } }
         }
     }
+
+    private fun refreshGroup() {
+        viewModelScope.launch {
+            _state.update { it.copy(group = repo.findGroup(groupId)) }
+        }
+    }
+
+    // --- Kontaktgruppen ---------------------------------------------------
+
+    fun loadContactGroups() {
+        _state.update { it.copy(contactGroupsLoading = true) }
+        viewModelScope.launch {
+            val groups = runCatching { repo.availableContactGroups() }.getOrDefault(emptyList())
+            _state.update { it.copy(contactGroups = groups, contactGroupsLoading = false) }
+        }
+    }
+
+    fun linkContactGroup(contactGroup: DeviceContactGroup, autoSync: Boolean) {
+        _state.update { it.copy(syncing = true) }
+        viewModelScope.launch {
+            val result = repo.linkContactGroup(groupId, contactGroup, autoSync)
+            _state.update { it.copy(lastSync = result, syncing = false) }
+            refreshGroup()
+        }
+    }
+
+    fun unlinkContactGroup() {
+        viewModelScope.launch {
+            repo.unlinkContactGroup(groupId)
+            refreshGroup()
+        }
+    }
+
+    fun setAutoSync(enabled: Boolean) {
+        viewModelScope.launch {
+            repo.setAutoSync(groupId, enabled)
+            refreshGroup()
+        }
+    }
+
+    /** Abgleich von Hand ausloesen. */
+    fun syncNow() {
+        _state.update { it.copy(syncing = true) }
+        viewModelScope.launch {
+            val result = repo.syncContactGroup(groupId)
+            _state.update { it.copy(lastSync = result, syncing = false) }
+            refreshGroup()
+        }
+    }
+
+    /** Entfernt die Empfaenger, die nicht mehr in der Kontaktgruppe stehen. */
+    fun removeMissing() {
+        viewModelScope.launch { repo.removeMissing(groupId) }
+    }
+
+    fun syncShown() = _state.update { it.copy(lastSync = null) }
 
     fun loadContacts() {
         _state.update { it.copy(contactsLoading = true) }

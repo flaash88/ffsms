@@ -1,6 +1,7 @@
 package cc.netwokx.ffsms.app
 
 import android.content.Context
+import cc.netwokx.ffsms.data.contacts.ContactsReader
 import cc.netwokx.ffsms.data.db.AppDatabase
 import cc.netwokx.ffsms.data.repo.CampaignRepository
 import cc.netwokx.ffsms.data.repo.GroupRepository
@@ -28,7 +29,11 @@ object ServiceLocator {
     fun groups(context: Context): GroupRepository = groupRepo ?: synchronized(this) {
         groupRepo ?: run {
             val db = database(context)
-            GroupRepository(db.groupDao(), db.recipientDao()).also { groupRepo = it }
+            GroupRepository(
+                db.groupDao(),
+                db.recipientDao(),
+                ContactsReader(context.applicationContext),
+            ).also { groupRepo = it }
         }
     }
 

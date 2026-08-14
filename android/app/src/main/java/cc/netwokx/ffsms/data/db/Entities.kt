@@ -16,6 +16,16 @@ data class GroupEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val createdAt: Long,
+    /**
+     * Verknuepfte Kontaktgruppe (in Google Kontakte "Label"), oder null bei
+     * einem von Hand gepflegten Verteiler.
+     */
+    val contactGroupId: Long? = null,
+    /** Name der Kontaktgruppe, damit die Anzeige ohne Kontaktzugriff auskommt. */
+    val contactGroupTitle: String? = null,
+    /** Taeglich automatisch abgleichen? */
+    val autoSyncContacts: Boolean = false,
+    val lastContactSyncAt: Long? = null,
 )
 
 /**
@@ -51,6 +61,18 @@ data class RecipientEntity(
     /** false = Nummer liess sich nicht nach E.164 normalisieren. */
     val valid: Boolean,
     val addedAt: Long,
+    /** true = kam ueber den Abgleich mit einer Kontaktgruppe herein. */
+    val fromContactGroup: Boolean = false,
+    /**
+     * true = steht nicht mehr in der verknuepften Kontaktgruppe.
+     *
+     * Solche Empfaenger werden NICHT automatisch entfernt, sondern nur
+     * markiert. Ein Verteiler, der sich von allein leert, weil die
+     * Kontakte-App gerade nicht synchronisiert hat, waere bei einer
+     * Alarmierung der schlimmste denkbare Fehler. Ueber das Entfernen
+     * entscheidet ein Mensch.
+     */
+    val missingInContactGroup: Boolean = false,
 )
 
 enum class CampaignStatus {

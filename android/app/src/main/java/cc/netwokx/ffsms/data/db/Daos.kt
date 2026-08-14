@@ -39,6 +39,26 @@ interface GroupDao {
 
     @Query("DELETE FROM groups WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query(
+        """
+        UPDATE groups
+        SET contactGroupId = :contactGroupId, contactGroupTitle = :title,
+            autoSyncContacts = :autoSync
+        WHERE id = :id
+        """,
+    )
+    suspend fun linkContactGroup(id: Long, contactGroupId: Long?, title: String?, autoSync: Boolean)
+
+    @Query("UPDATE groups SET autoSyncContacts = :enabled WHERE id = :id")
+    suspend fun setAutoSync(id: Long, enabled: Boolean)
+
+    @Query("UPDATE groups SET lastContactSyncAt = :at WHERE id = :id")
+    suspend fun markSynced(id: Long, at: Long)
+
+    /** Alle Verteiler, die taeglich mit einer Kontaktgruppe abgeglichen werden. */
+    @Query("SELECT * FROM groups WHERE contactGroupId IS NOT NULL AND autoSyncContacts = 1")
+    suspend fun autoSyncGroups(): List<GroupEntity>
 }
 
 @Dao
@@ -64,6 +84,22 @@ interface RecipientDao {
 
     @Query("SELECT COUNT(*) FROM recipients WHERE groupId = :groupId AND valid = 1")
     suspend fun countValid(groupId: Long): Int
+
+    @Query("SELECT * FROM recipients WHERE groupId = :groupId")
+    suspend fun allForGroup(groupId: Long): List<RecipientEntity>
+
+    /**
+     * Markiert Empfaenger, die nicht mehr in der Kontaktgruppe stehen.
+     * Entfernt wird nichts - darueber entscheidet ein Mensch.
+     */
+    @Query("UPDATE recipients SET missingInContactGroup = :missing WHERE id = :id")
+    suspend fun setMissing(id: Long, missing: Boolean)
+
+    @Query("DELETE FROM recipients WHERE groupId = :groupId AND missingInContactGroup = 1")
+    suspend fun deleteMissing(groupId: Long)
+
+    @Query("SELECT COUNT(*) FROM recipients WHERE groupId = :groupId AND missingInContactGroup = 1")
+    suspend fun countMissing(groupId: Long): Int
 }
 
 data class RecipientStatusRow(
