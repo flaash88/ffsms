@@ -165,6 +165,8 @@ DB_NAME=ffsms
 API_KEYS=ff-kuehwiesen-sms:<API_KEY von oben>
 
 NTFY_BASE_URL=https://ntfy.networkx.cc
+# Letzter Teil = Topic. Ein zufaelliger Anhang schadet nicht, er muss dann
+# aber in Schritt 6 genauso freigegeben werden. Merk dir den Namen.
 NTFY_URL=https://ntfy.networkx.cc/ff-sms
 NTFY_TOKEN=          # bleibt vorerst leer, kommt in Schritt 6
 
@@ -239,9 +241,22 @@ Meldungen. Jetzt einen Benutzer anlegen:
 ```bash
 docker compose exec ntfy ntfy user add ff
 # Passwort: der NTFY_PASS-Wert aus Schritt 3
-
-docker compose exec ntfy ntfy access ff ff-sms rw
 ```
+
+Jetzt die Rechte auf das Topic. **Der Topic-Name muss exakt dem letzten Teil
+von `NTFY_URL` entsprechen** — deshalb hier nicht abtippen, sondern aus der
+`.env` ableiten:
+
+```bash
+set -a; . ./.env; set +a
+docker compose exec ntfy ntfy access ff "${NTFY_URL##*/}" rw
+docker compose exec ntfy ntfy access ff      # zur Kontrolle
+```
+
+> Bei `deny-all` gilt eine Freigabe für genau diesen einen Namen. Wer in der
+> `.env` ein eigenes Topic gewählt hat — etwa `ff-sms-a1b2c3` statt `ff-sms` —
+> und die Rechte auf `ff-sms` vergibt, bekommt beim Versand ein `403`. Am
+> Handy sieht das aus, als käme einfach nichts an.
 
 Token für das Backend erzeugen:
 
@@ -311,6 +326,18 @@ curl -H "Authorization: Bearer $NTFY_TOKEN" \
 > Wird stattdessen von Hand kopiert: **die spitzen Klammern gehören nicht
 > dazu.** `Bearer <tk_abc>` schickt die Klammern mit und ergibt ein
 > `401 unauthorized`, das wie ein falsches Token aussieht, aber keines ist.
+
+Dieser `curl` läuft auf dem Host. Ob auch das **Backend** durchkommt, zeigt
+derselbe Aufruf aus dem api-Container heraus — mit dessen Variablen und über
+dieselbe Stelle im Code:
+
+```bash
+docker compose exec api node -e 'fetch(process.env.NTFY_URL,{method:"POST",headers:{Authorization:"Bearer "+process.env.NTFY_TOKEN},body:"Test aus dem api-Container"}).then(r=>console.log(r.status,r.statusText))'
+```
+
+Erwartet `200 OK`. Bei `401`/`403` stimmt Token oder Topic-Freigabe nicht.
+Der Umweg lohnt sich, weil der Host andere Werte haben kann als der
+Container — etwa nach einer `.env`-Änderung ohne Neustart.
 
 **Auf dem Handy:** die [ntfy-App](https://f-droid.org/packages/io.heckel.ntfy/)
 installieren, unter *Einstellungen → Benutzerkonten* den Server
@@ -388,7 +415,8 @@ lässt sich einfach nachholen, solange die Woche noch läuft.
 | `docker: permission denied` | Nach `usermod -aG docker` nicht neu angemeldet |
 | Docker-Daemon startet nicht (LXC) | Container braucht `nesting=1` |
 | `api` startet nicht, Log nennt `API_KEYS` | `.env` fehlt oder der Eintrag hat nicht das Format `kennung:schluessel` |
-| Meldung kommt nicht am Handy an | Token fehlt in `.env`, oder der Benutzer hat keine Rechte auf dem Topic (`ntfy access ff ff-sms rw`) |
+| Meldung kommt nicht am Handy an | Token fehlt in `.env`, oder der Benutzer hat keine Rechte auf **genau diesem** Topic — `docker compose exec ntfy ntfy access ff` zeigt, worauf die Rechte lauten |
+| Report meldet `sent:false`, `curl` an ntfy geht aber | Backend und Handy hängen an verschiedenen Topics: `${NTFY_URL##*/}` mit der Freigabe vergleichen |
 | `401 unauthorized` bei ntfy, Token sieht richtig aus | Spitze Klammern mitkopiert: `Bearer <tk_...>` statt `Bearer tk_...` |
 | `bash: 20: command not found` beim Einlesen der `.env` | Wert mit Leerzeichen ohne Anführungszeichen, siehe Schritt 7 |
 | `403` beim Upload aus der App | Geräte-Kennung in der App weicht von der in `API_KEYS` ab |
