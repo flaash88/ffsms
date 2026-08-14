@@ -72,6 +72,14 @@ services:
 
   # Cloudflare Tunnel. Startet nur mit "--profile tunnel", damit ein Setup
   # ohne Tunnel (z. B. reiner LAN-Betrieb) nicht daran scheitert.
+  #
+  # WICHTIG beim Betrieb: wird der api-Container NEU ERZEUGT (nicht nur
+  # neu gestartet), bekommt er eine neue IP im Docker-Netz. cloudflared haelt
+  # dann offene Verbindungen zur alten Adresse, und Cloudflare antwortet mit
+  # 502 - der Tunnel selbst ist dabei voellig in Ordnung. Deshalb nach jedem
+  # "docker compose up -d --build" auch
+  #     docker compose restart cloudflared
+  # ausfuehren. Das erledigt update.sh im selben Verzeichnis.
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped

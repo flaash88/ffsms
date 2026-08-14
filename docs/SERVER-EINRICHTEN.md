@@ -119,8 +119,11 @@ cd backend
 cd ~/ffsms
 git fetch origin
 git checkout -B claude/ff-sms-verteiler-app-ifodkw origin/claude/ff-sms-verteiler-app-ifodkw
-cd backend && docker compose --profile tunnel up -d --build
+cd backend && ./update.sh
 ```
+
+`update.sh` baut neu, startet cloudflared mit und prüft anschließend, ob das
+Backend lokal und durch den Tunnel antwortet.
 
 Die `.env` überlebt das, weil sie nicht versioniert ist. Kamen mit dem Update
 neue Pflichtfelder dazu, bricht der Start mit einer Meldung ab, die das
@@ -256,7 +259,14 @@ Und das Backend neu starten, damit es den Token liest:
 
 ```bash
 docker compose up -d api
+docker compose restart cloudflared
 ```
+
+> Der zweite Befehl ist kein Zufall. `up -d` **erzeugt den Container neu**, und
+> dabei wechselt seine IP im Docker-Netz. cloudflared hält offene Verbindungen
+> zur alten Adresse und antwortet dann mit **502**, obwohl das Backend
+> einwandfrei läuft. Ein Neustart des Tunnels löst das. Gilt für jede Änderung
+> an der `.env` oder am Code.
 
 ---
 
@@ -330,13 +340,13 @@ Danach **Verbrauchszahlen übertragen** einschalten.
 # Logs
 docker compose logs -f api
 
-# Neustart nach .env-Änderung
-docker compose up -d
+# Neustart nach .env-Änderung (cloudflared muss mit, siehe unten)
+./update.sh
 
 # Auf neuen Stand bringen
 cd ~/ffsms && git fetch origin \
   && git checkout -B claude/ff-sms-verteiler-app-ifodkw origin/claude/ff-sms-verteiler-app-ifodkw \
-  && cd backend && docker compose --profile tunnel up -d --build
+  && cd backend && ./update.sh
 
 # Datenbank sichern (regelmäßig! z. B. per cron)
 docker compose exec -T db pg_dump -U ffsms ffsms | gzip > ~/ffsms-$(date +%F).sql.gz
@@ -353,7 +363,8 @@ schlicht warten und die Logs beobachten.
 | Symptom | Ursache |
 |---|---|
 | `curl` von außen antwortet nicht | Tunnel läuft nicht: `docker compose logs cloudflared` |
-| `502` von Cloudflare | Public Hostname zeigt auf `localhost` statt auf `api` bzw. `ntfy` |
+| `502` von Cloudflare, lokal aber `200` | api-Container wurde neu erzeugt und hat eine neue IP - `docker compose restart cloudflared` bzw. `./update.sh` verwenden |
+| `502` von Cloudflare, auch lokal kaputt | Public Hostname zeigt auf `localhost` statt auf `api` bzw. `ntfy` |
 | `service "ntfy" is not running` | Lokale Kopie ist aelter als der Commit mit ntfy - siehe Schritt 2, "auf den neuesten Stand bringen" |
 | Nach `git clone` liegt nur die README da | Ohne `-b claude/...` wird der Standard-Branch geholt, auf dem kein Code liegt |
 | `sudo: command not found` | Minimal-Installation ohne sudo - siehe Schritt 0 |
