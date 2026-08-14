@@ -35,10 +35,20 @@ es echte Arbeit.
 
 ## Schritt 1 — Keystore erzeugen
 
-Auf deinem Rechner (nicht auf dem Server), im Projektverzeichnis:
+Der Keystore kann auf dem eigenen Rechner **oder** auf dem Server entstehen —
+entscheidend ist nur, dass er anschließend gesichert wird.
+
+Auf dem Server ist meist kein Java installiert; `keytool` gehört dazu. Die JRE
+genügt und spart gegenüber dem vollen JDK rund 250 MB:
 
 ```bash
-cd android
+sudo apt install -y openjdk-17-jre-headless
+```
+
+Dann im `android`-Verzeichnis des Projekts — **nicht** in `backend`:
+
+```bash
+cd ~/ffsms/android
 
 keytool -genkeypair -v \
   -keystore ff-sms-tool.jks \
@@ -65,6 +75,16 @@ Updates mehr möglich — deshalb großzügig.
 
 Ergebnis: die Datei `android/ff-sms-tool.jks`. Sie steht in `.gitignore` und
 darf **nicht** ins Git.
+
+**Sofort sichern**, bevor es vergessen wird — eine Kopie auf dem Server allein
+ist keine Sicherung:
+
+```bash
+# vom eigenen Rechner aus:
+scp dein-server:~/ffsms/android/ff-sms-tool.jks .
+```
+
+Datei und Passwort gehören zusammen in den Passwortmanager der Feuerwehr.
 
 ---
 
@@ -104,6 +124,10 @@ Vier Secrets anlegen:
 
 Secrets sind nach dem Speichern nicht mehr lesbar — auch nicht für dich. Nur
 überschreiben ist möglich. Deshalb: Passwort vorher sichern.
+
+> **Die base64-Zeile und das Passwort sind so schützenswert wie der Keystore
+> selbst.** Wer beides hat, kann ein Update signieren, das die Geräte als echt
+> akzeptieren. Nicht in Chats, Tickets oder Notizzettel.
 
 ---
 
@@ -243,6 +267,8 @@ keinem Verhältnis zu zwei Feuerwehrhandys.
 
 | Symptom | Ursache |
 |---|---|
+| `bash: keytool: command not found` | Kein Java installiert - `sudo apt install -y openjdk-17-jre-headless` |
+| `cd: android: No such file or directory` | Falsches Verzeichnis: `cd ~/ffsms/android`, nicht aus `backend` heraus |
 | Kein `ff-sms-tool-release`-Artefakt | `KEYSTORE_BASE64` fehlt oder ist abgeschnitten |
 | CI-Fehler „keystore password was incorrect" | `KEYSTORE_PASSWORD` bzw. `KEY_PASSWORD` stimmt nicht |
 | Android bricht Installation mit Signaturfehler ab | Auf dem Gerät liegt noch das Debug-APK — einmal deinstallieren |
