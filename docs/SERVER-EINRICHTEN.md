@@ -253,26 +253,40 @@ docker compose up -d api
 
 ## Schritt 7 — Prüfen
 
+Damit nichts abgetippt werden muss, zuerst die Werte aus der `.env` in die
+Shell laden:
+
+```bash
+cd ~/ffsms/backend
+set -a; . ./.env; set +a
+```
+
+Das prüft nebenbei mit, ob in der `.env` das Richtige steht — ein Tippfehler
+dort fällt hier sofort auf.
+
 **Backend von außen:**
 
 ```bash
 curl -s https://ffsms.networkx.cc/api/v1/health/live
 # {"status":"ok"}
 
-curl -s -H "X-API-Key: <API_KEY>" https://ffsms.networkx.cc/api/v1/health
+curl -s -H "X-API-Key: ${API_KEYS#*:}" https://ffsms.networkx.cc/api/v1/health
 # {"status":"ok","database":"up",...}
 ```
 
-Kommt bei der zweiten Zeile `401`, stimmt der Schlüssel nicht mit `API_KEYS`
-überein.
+`${API_KEYS#*:}` schneidet die Geräte-Kennung vor dem Doppelpunkt ab und lässt
+nur den Schlüssel übrig. Kommt `401`, stimmt der Schlüssel nicht.
 
 **ntfy:**
 
 ```bash
-curl -H "Authorization: Bearer <NTFY_TOKEN>" \
-     -H "Title: Test" -d "Funktioniert" \
-     https://ntfy.networkx.cc/ff-sms
+curl -H "Authorization: Bearer $NTFY_TOKEN" \
+     -H "Title: Test" -d "Funktioniert" "$NTFY_URL"
 ```
+
+> Wird stattdessen von Hand kopiert: **die spitzen Klammern gehören nicht
+> dazu.** `Bearer <tk_abc>` schickt die Klammern mit und ergibt ein
+> `401 unauthorized`, das wie ein falsches Token aussieht, aber keines ist.
 
 **Auf dem Handy:** die [ntfy-App](https://f-droid.org/packages/io.heckel.ntfy/)
 installieren, unter *Einstellungen → Benutzerkonten* den Server
@@ -334,5 +348,6 @@ schlicht warten und die Logs beobachten.
 | Docker-Daemon startet nicht (LXC) | Container braucht `nesting=1` |
 | `api` startet nicht, Log nennt `API_KEYS` | `.env` fehlt oder der Eintrag hat nicht das Format `kennung:schluessel` |
 | Meldung kommt nicht am Handy an | Token fehlt in `.env`, oder der Benutzer hat keine Rechte auf dem Topic (`ntfy access ff ff-sms rw`) |
+| `401 unauthorized` bei ntfy, Token sieht richtig aus | Spitze Klammern mitkopiert: `Bearer <tk_...>` statt `Bearer tk_...` |
 | `403` beim Upload aus der App | Geräte-Kennung in der App weicht von der in `API_KEYS` ab |
 | ntfy-Links im Handy zeigen ins Leere | `NTFY_BASE_URL` stimmt nicht mit dem Hostnamen im Tunnel überein |

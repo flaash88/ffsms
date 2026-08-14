@@ -157,9 +157,15 @@ scp app-release.apk release.json dein-server:~/ffsms/backend/updates/
 Prüfen, ob der Server es sieht:
 
 ```bash
-curl -s -H "X-API-Key: <API_KEY>" \
+cd ~/ffsms/backend
+set -a; . ./.env; set +a
+
+curl -s -H "X-API-Key: ${API_KEYS#*:}" \
   https://ffsms.networkx.cc/api/v1/update/manifest
 ```
+
+> Beim Kopieren von Hand: **die spitzen Klammern der Platzhalter gehören nicht
+> in den Befehl.**
 
 Erwartet wird etwas wie:
 
