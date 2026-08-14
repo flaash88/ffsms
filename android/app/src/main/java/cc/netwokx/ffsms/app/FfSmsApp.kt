@@ -3,6 +3,7 @@ package cc.netwokx.ffsms.app
 import android.app.Application
 import cc.netwokx.ffsms.notify.Notifications
 import cc.netwokx.ffsms.sync.SyncScheduler
+import cc.netwokx.ffsms.update.UpdateScheduler
 
 class FfSmsApp : Application() {
 
@@ -14,5 +15,9 @@ class FfSmsApp : Application() {
         // ob der Sync ueberhaupt eingeschaltet und ein Backend konfiguriert
         // ist - hier wird nur der Zeitplan registriert.
         SyncScheduler.schedulePeriodic(this)
+
+        // Taegliche Suche nach einer neueren Version. Meldet nur, installiert
+        // nichts von allein.
+        UpdateScheduler.schedulePeriodic(this)
     }
 }

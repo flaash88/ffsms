@@ -37,6 +37,12 @@ services:
       TZ_REPORT: ${TZ_REPORT:-Europe/Vienna}
       WEEKLY_REPORT_CRON: ${WEEKLY_REPORT_CRON:-0 20 * * 0}
       REPORT_TITLE: ${REPORT_TITLE:-FF-SMS}
+      UPDATE_DIR: /data/updates
+    volumes:
+      # Hier liegen app-release.apk und release.json fuer den Update-Kanal.
+      # Nur lesend eingebunden: der Dienst soll das APK ausliefern, nicht
+      # veraendern koennen.
+      - ./updates:/data/updates:ro
     ports:
       # Nur auf localhost. Nach aussen kommt der Dienst ueber Tailscale
       # bzw. den Cloudflare Tunnel, nicht ueber einen offenen Port.

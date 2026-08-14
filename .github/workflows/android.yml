@@ -60,3 +60,68 @@ jobs:
           name: ff-sms-tool-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # --- Release ---------------------------------------------------------
+      # Nur wenn ein Keystore als Secret hinterlegt ist. Ohne ihn bleibt es
+      # beim Debug-APK; der Build schlaegt deswegen nicht fehl.
+      #
+      # Benoetigte Secrets:
+      #   KEYSTORE_BASE64   base64 -w0 ff-sms-tool.jks
+      #   KEYSTORE_PASSWORD
+      #   KEY_ALIAS
+      #   KEY_PASSWORD
+      - name: Keystore vorhanden?
+        id: keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "vorhanden=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "vorhanden=false" >> "$GITHUB_OUTPUT"
+            echo "Kein KEYSTORE_BASE64-Secret gesetzt - Release wird uebersprungen."
+          fi
+
+      - name: Keystore entpacken
+        if: steps.keystore.outputs.vorhanden == 'true'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ff-sms-tool.jks
+          cat > keystore.properties <<EOF
+          storeFile=ff-sms-tool.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: Release-APK bauen
+        if: steps.keystore.outputs.vorhanden == 'true'
+        run: ./gradlew assembleRelease --no-daemon
+
+      # release.json wird aus der Gradle-Konfiguration erzeugt, damit die
+      # Versionsangabe im Update-Kanal nicht von der im APK abweichen kann.
+      - name: Update-Paket schnueren
+        if: steps.keystore.outputs.vorhanden == 'true'
+        run: |
+          VERSION=$(./gradlew -q printVersion | tail -1)
+          CODE="${VERSION%%:*}"
+          NAME="${VERSION##*:}"
+          mkdir -p ../updates-out
+          cp app/build/outputs/apk/release/app-release.apk ../updates-out/
+          # notes bleibt leer: Commit-Nachrichten enthalten Zeilenumbrueche und
+          # Anfuehrungszeichen und wuerden das JSON zerlegen. Wer den Kollegen
+          # etwas mitteilen will, traegt den Text auf dem Server von Hand ein.
+          printf '{\n  "version_code": %s,\n  "version_name": "%s",\n  "notes": ""\n}\n' \
+            "$CODE" "$NAME" > ../updates-out/release.json
+          echo "Update-Paket fuer $NAME ($CODE):"
+          cat ../updates-out/release.json
+          sha256sum ../updates-out/app-release.apk
+
+      - name: Keystore wieder entfernen
+        if: always() && steps.keystore.outputs.vorhanden == 'true'
+        run: rm -f ff-sms-tool.jks keystore.properties
+
+      - name: Update-Paket bereitstellen
+        if: steps.keystore.outputs.vorhanden == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ff-sms-tool-release
+          path: updates-out/
+          if-no-files-found: error

@@ -101,6 +101,19 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+/**
+ * Gibt "versionCode:versionName" aus.
+ *
+ * Wird von der CI gebraucht, um release.json fuer den Update-Kanal zu
+ * erzeugen. So steht die Version an genau einer Stelle - hier - und kann in
+ * der release.json nicht abweichen.
+ */
+tasks.register("printVersion") {
+    val code = android.defaultConfig.versionCode
+    val name = android.defaultConfig.versionName
+    doLast { println("$code:$name") }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

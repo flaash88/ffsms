@@ -58,3 +58,20 @@ data class HealthDto(
     @SerialName("status") val status: String,
     @SerialName("version") val version: String? = null,
 )
+
+/**
+ * Beschreibung des bereitliegenden Updates.
+ *
+ * Enthaelt keine personenbezogenen Daten - die Abfrage geht in die andere
+ * Richtung als der Verbrauchs-Upload und laedt lediglich herunter.
+ */
+@Serializable
+data class UpdateManifestDto(
+    @SerialName("version_code") val versionCode: Int,
+    @SerialName("version_name") val versionName: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    /** Pruefsumme des APK. Wird nach dem Download erneut geprueft. */
+    @SerialName("sha256") val sha256: String,
+    @SerialName("notes") val notes: String? = null,
+    @SerialName("released_at") val releasedAt: String? = null,
+)

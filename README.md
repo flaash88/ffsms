@@ -26,6 +26,7 @@ und wie sieht man es sofort, wenn es doch passiert?**
 - [.env-Felder](#env-felder)
 - [ntfy-Einrichtung](#ntfy-einrichtung)
 - [API](#api)
+- [Updates ausrollen](#updates-ausrollen)
 - [Abgleich mit der Providerrechnung](#abgleich-mit-der-providerrechnung)
 - [Tests](#tests)
 - [Abweichungen von der Vorgabe](#abweichungen-von-der-vorgabe)
@@ -557,6 +558,117 @@ sie als synchronisiert; nach jeder Aussendung wird zusätzlich sofort ein
 Versuch angestoßen. **Das SMS-Handy darf beliebig lange offline sein — der
 Versand hängt nie am Backend.** Ein Retry beim Upload ist ungefährlich, weil
 nur Zahlen übertragen werden und der Server ein Upsert macht.
+
+---
+
+## Updates ausrollen
+
+Damit ein Update nicht bei jedem Kollegen von Hand installiert werden muss,
+liefert das Backend die jeweils aktuelle Version aus. Die App sieht einmal
+täglich nach und meldet sich, wenn etwas bereitliegt.
+
+**Zwei Dinge vorweg, die sich nicht wegkonfigurieren lassen:**
+
+- **Android zeigt immer seinen Installationsdialog.** Der Kollege muss einmal
+  auf „Installieren" tippen. Eine stille Installation setzt voraus, dass die App
+  Geräteeigentümer eines zentral verwalteten Geräts ist — für ein einzelnes
+  Feuerwehrhandy unverhältnismäßig. Hinfahren muss aber niemand mehr.
+- **Die Signatur muss gleich bleiben.** Ein Update, das mit einem anderen
+  Keystore signiert ist, lehnt Android ab. Wer heute ein Debug-APK installiert
+  hat, muss für den Wechsel auf die Release-Signatur **einmal deinstallieren** —
+  Verteiler und Verlauf sind dann weg. Deshalb: **vor dem ersten echten Einsatz
+  auf das Release-APK wechseln**, nicht danach.
+
+### Einmalige Einrichtung
+
+**1. Keystore erzeugen** (siehe [Release-APK signieren](#release-apk-signieren)),
+dann als GitHub-Secrets hinterlegen — *Settings → Secrets and variables →
+Actions*:
+
+| Secret | Wert |
+|---|---|
+| `KEYSTORE_BASE64` | `base64 -w0 ff-sms-tool.jks` |
+| `KEYSTORE_PASSWORD` | das Store-Passwort |
+| `KEY_ALIAS` | `ffsms` |
+| `KEY_PASSWORD` | das Key-Passwort |
+
+Fehlen die Secrets, baut die CI weiterhin nur das Debug-APK — der Build schlägt
+deswegen nicht fehl.
+
+**2. Update-Verzeichnis auf dem Server anlegen:**
+
+```bash
+mkdir -p ~/ffsms/backend/updates
+```
+
+Es wird von `docker compose` als `/data/updates` **nur lesend** eingebunden.
+
+**3. Backend neu starten**, damit der Mount greift:
+
+```bash
+cd ~/ffsms/backend && docker compose up -d
+```
+
+### Bei jedem Update
+
+**1. `versionCode` erhöhen** in `android/app/build.gradle.kts` — das ist die
+Zahl, die die App vergleicht. Ohne Erhöhung passiert nichts:
+
+```kotlin
+versionCode = 2
+versionName = "1.0.1"
+```
+
+**2. Pushen.** Die CI baut das signierte Release-APK und legt das Artefakt
+`ff-sms-tool-release` bereit (`app-release.apk` + `release.json`).
+
+**3. Artefakt herunterladen, entpacken und auf den Server kopieren:**
+
+```bash
+scp app-release.apk release.json dein-server:~/ffsms/backend/updates/
+```
+
+Fertig. Ein Neustart des Backends ist nicht nötig — die Dateien werden bei
+jeder Abfrage frisch gelesen.
+
+**4. Optional Hinweistext ergänzen**, der dem Kollegen angezeigt wird:
+
+```json
+{ "version_code": 2, "version_name": "1.0.1", "notes": "Zählt jetzt auch Umlaute richtig." }
+```
+
+### Auf dem Gerät
+
+Der Kollege bekommt binnen eines Tages die Meldung „Update verfügbar" und
+tippt in der App auf **Einstellungen → App-Version → Herunterladen und
+installieren**. Prüfen lässt sich es dort auch jederzeit von Hand.
+
+Beim ersten Mal fragt Android nach der Erlaubnis, Apps aus dieser Quelle zu
+installieren. Danach nicht mehr.
+
+### Wie es abgesichert ist
+
+- Der Update-Endpunkt liegt **hinter dem API-Key**, wie alles andere auch.
+- Das Backend berechnet den **SHA-256 selbst** aus der Datei auf der Platte,
+  statt ihn aus `release.json` zu übernehmen. Eine halb hochgeladene Datei kann
+  damit nicht als gültig ausgewiesen werden.
+- Die App prüft die Prüfsumme **während des Schreibens** in die
+  Installationssitzung und bricht vor dem Commit ab, wenn sie nicht passt. Ein
+  abgebrochener Download wird dem System also gar nicht erst angeboten.
+- Ein **Downgrade** wird ignoriert: verglichen wird nur, ob der `version_code`
+  auf dem Server größer ist.
+- **Automatisch heruntergeladen wird nichts.** Der Tagesjob meldet nur. Auf
+  einem Alarmierungsgerät ist eine Installation zum falschen Zeitpunkt ein
+  reales Risiko — wann aktualisiert wird, entscheidet der Mensch davor.
+
+### Fehlersuche
+
+| Symptom | Ursache |
+|---|---|
+| „Die App ist aktuell", obwohl neu hochgeladen | `versionCode` nicht erhöht, oder `release.json` zeigt noch die alte Zahl |
+| HTTP 404 beim Prüfen | `app-release.apk` oder `release.json` fehlt im Update-Verzeichnis |
+| „Prüfsumme stimmt nicht" | Datei unvollständig übertragen — `scp` wiederholen |
+| Android bricht die Installation ab | Signatur weicht ab: das installierte APK stammt aus einem anderen Keystore (z. B. noch das Debug-APK) |
 
 ---
 

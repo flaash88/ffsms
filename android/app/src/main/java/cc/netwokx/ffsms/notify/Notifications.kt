@@ -87,6 +87,33 @@ object Notifications {
         )
     }
 
+    fun updateAvailable(context: Context, update: cc.netwokx.ffsms.update.AvailableUpdate) {
+        val text = buildString {
+            append(context.getString(R.string.notif_update_text, update.versionName))
+            update.notes?.takeIf { it.isNotBlank() }?.let { append("\n\n").append(it) }
+        }
+        notify(
+            context,
+            title = context.getString(R.string.notif_update_title),
+            text = text,
+            high = false,
+        )
+    }
+
+    fun updateInstalled(context: Context) = notify(
+        context,
+        title = context.getString(R.string.notif_update_done_title),
+        text = context.getString(R.string.notif_update_done_text),
+        high = false,
+    )
+
+    fun updateFailed(context: Context, reason: String) = notify(
+        context,
+        title = context.getString(R.string.notif_update_failed_title),
+        text = context.getString(R.string.notif_update_failed_text, reason),
+        high = true,
+    )
+
     private fun notify(context: Context, title: String, text: String, high: Boolean) {
         ensureChannels(context)
         val notification = NotificationCompat.Builder(context, if (high) CHANNEL_RESULT else CHANNEL_SENDING)

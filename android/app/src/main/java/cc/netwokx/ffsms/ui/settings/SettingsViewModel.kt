@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import cc.netwokx.ffsms.app.ServiceLocator
 import cc.netwokx.ffsms.data.remote.ApiClientFactory
 import cc.netwokx.ffsms.data.settings.AppSettings
+import cc.netwokx.ffsms.update.AvailableUpdate
+import cc.netwokx.ffsms.update.UpdateChecker
+import cc.netwokx.ffsms.update.UpdateResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,11 +22,21 @@ sealed interface ConnectionTest {
     data class Failed(val reason: String) : ConnectionTest
 }
 
+sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object UpToDate : UpdateState
+    data class Available(val update: AvailableUpdate) : UpdateState
+    data object Downloading : UpdateState
+    data class Failed(val reason: String) : UpdateState
+}
+
 data class SettingsUiState(
     val settings: AppSettings? = null,
     val segmentsToday: Int = 0,
     val test: ConnectionTest = ConnectionTest.Idle,
     val saved: Boolean = false,
+    val update: UpdateState = UpdateState.Idle,
 )
 
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
@@ -84,6 +97,42 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun testShown() = _state.update { it.copy(test = ConnectionTest.Idle) }
+
+    /**
+     * Sucht von Hand nach einem Update.
+     *
+     * Der taegliche Worker meldet nur; heruntergeladen und installiert wird
+     * erst, wenn hier ausdruecklich darauf getippt wird. Auf einem
+     * Alarmierungsgeraet soll niemand ueberrascht werden.
+     */
+    fun checkForUpdate() {
+        _state.update { it.copy(update = UpdateState.Checking) }
+        viewModelScope.launch {
+            val result = UpdateChecker(getApplication()).check()
+            _state.update {
+                it.copy(
+                    update = when (result) {
+                        is UpdateResult.Available -> UpdateState.Available(result.manifest)
+                        UpdateResult.UpToDate -> UpdateState.UpToDate
+                        is UpdateResult.Failed -> UpdateState.Failed(result.reason)
+                    },
+                )
+            }
+        }
+    }
+
+    fun installUpdate(update: AvailableUpdate) {
+        _state.update { it.copy(update = UpdateState.Downloading) }
+        viewModelScope.launch {
+            val error = UpdateChecker(getApplication()).download(update)
+            _state.update {
+                // Bei Erfolg uebernimmt jetzt Androids Installationsdialog.
+                it.copy(update = if (error == null) UpdateState.Idle else UpdateState.Failed(error))
+            }
+        }
+    }
+
+    fun updateShown() = _state.update { it.copy(update = UpdateState.Idle) }
 
     fun savedShown() = _state.update { it.copy(saved = false) }
 

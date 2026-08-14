@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cc.netwokx.ffsms.BuildConfig
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.ui.permissions.PermissionRequest
 import cc.netwokx.ffsms.ui.permissions.openAppSettings
@@ -73,6 +74,22 @@ fun SettingsScreen(
                 }
                 snackbar.showSnackbar(text)
                 vm.testShown()
+            }
+            else -> Unit
+        }
+    }
+
+    LaunchedEffect(state.update) {
+        when (val update = state.update) {
+            UpdateState.UpToDate -> {
+                snackbar.showSnackbar(context.getString(R.string.settings_update_none))
+                vm.updateShown()
+            }
+            is UpdateState.Failed -> {
+                snackbar.showSnackbar(
+                    context.getString(R.string.settings_update_failed, update.reason),
+                )
+                vm.updateShown()
             }
             else -> Unit
         }
@@ -183,6 +200,60 @@ fun SettingsScreen(
                 description = stringResource(R.string.settings_max_day_desc),
                 onCommit = vm::setMaxPerDay,
             )
+
+            HorizontalDivider()
+            SectionTitle(stringResource(R.string.settings_update))
+
+            Text(
+                stringResource(
+                    R.string.settings_version,
+                    BuildConfig.VERSION_NAME,
+                    BuildConfig.VERSION_CODE,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
+            when (val update = state.update) {
+                is UpdateState.Available -> {
+                    Text(
+                        stringResource(
+                            R.string.settings_update_available,
+                            update.update.versionName,
+                            update.update.sizeBytes / 1024 / 1024,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    update.update.notes?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Button(onClick = { vm.installUpdate(update.update) }) {
+                        Text(stringResource(R.string.settings_update_install))
+                    }
+                    Text(
+                        stringResource(R.string.settings_update_confirm_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                UpdateState.Downloading -> Text(
+                    stringResource(R.string.settings_update_downloading),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                else -> OutlinedButton(
+                    onClick = vm::checkForUpdate,
+                    enabled = update != UpdateState.Checking,
+                ) {
+                    Text(
+                        stringResource(
+                            if (update == UpdateState.Checking) {
+                                R.string.settings_update_checking
+                            } else {
+                                R.string.settings_update_check
+                            },
+                        ),
+                    )
+                }
+            }
 
             HorizontalDivider()
             SectionTitle(stringResource(R.string.settings_permissions))

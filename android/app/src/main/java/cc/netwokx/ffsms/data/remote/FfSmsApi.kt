@@ -10,6 +10,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
+import retrofit2.http.Streaming
+import okhttp3.ResponseBody
 import java.util.concurrent.TimeUnit
 
 interface FfSmsApi {
@@ -26,6 +28,17 @@ interface FfSmsApi {
 
     @GET("api/v1/health")
     suspend fun health(): HealthDto
+
+    @GET("api/v1/update/manifest")
+    suspend fun updateManifest(): UpdateManifestDto
+
+    /**
+     * Streaming, damit das APK nicht komplett in den Arbeitsspeicher geladen
+     * wird - es ist rund 20 MB gross.
+     */
+    @Streaming
+    @GET("api/v1/update/apk")
+    suspend fun updateApk(): ResponseBody
 }
 
 object ApiClientFactory {

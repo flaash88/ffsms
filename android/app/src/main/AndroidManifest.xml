@@ -14,6 +14,14 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+      Fuer den Update-Kanal: die App laedt ihr eigenes Update vom
+      Feuerwehr-Server und uebergibt es dem System. Android zeigt dabei
+      trotzdem seinen Installationsdialog - eine stille Installation ist
+      damit NICHT moeglich und auch nicht gewollt.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- Der Versand laeuft sichtbar als Vordergrunddienst, nicht heimlich. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -55,6 +63,15 @@
             <intent-filter>
                 <action android:name="cc.netwokx.ffsms.SMS_SENT" />
                 <action android:name="cc.netwokx.ffsms.SMS_DELIVERED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Ergebnis der Installationssitzung, inkl. Rueckfrage an den Benutzer. -->
+        <receiver
+            android:name=".update.InstallStatusReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="cc.netwokx.ffsms.INSTALL_STATUS" />
             </intent-filter>
         </receiver>
 

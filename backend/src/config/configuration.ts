@@ -34,6 +34,8 @@ export interface AppConfig {
   weeklyReportCron: string;
   /** Klartextname in der Betreffzeile des Wochenreports. */
   reportTitle: string;
+  /** Verzeichnis mit app-release.apk und release.json fuer den Update-Kanal. */
+  updateDir: string;
 }
 
 /**
@@ -104,4 +106,5 @@ export default (): AppConfig => ({
   // Sonntag 20:00. Die Zeitzone kommt aus TZ_REPORT, nicht aus dem Cron-String.
   weeklyReportCron: process.env.WEEKLY_REPORT_CRON ?? '0 20 * * 0',
   reportTitle: process.env.REPORT_TITLE ?? 'FF-SMS',
+  updateDir: process.env.UPDATE_DIR ?? '/data/updates',
 });

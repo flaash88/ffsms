@@ -135,6 +135,17 @@
     <string name="settings_saved">Gespeichert.</string>
     <string name="settings_number_invalid">Bitte eine Zahl größer als 0 eingeben.</string>
 
+    <string name="settings_update">App-Version</string>
+    <string name="settings_version">Installiert: %1$s (Build %2$d)</string>
+    <string name="settings_update_check">Nach Update suchen</string>
+    <string name="settings_update_checking">Suche…</string>
+    <string name="settings_update_none">Die App ist aktuell.</string>
+    <string name="settings_update_available">Version %1$s verfügbar (%2$d MB)</string>
+    <string name="settings_update_install">Herunterladen und installieren</string>
+    <string name="settings_update_downloading">Wird heruntergeladen…</string>
+    <string name="settings_update_confirm_hint">Android fragt danach noch einmal nach — das ist bei Apps außerhalb des Play Store immer so.</string>
+    <string name="settings_update_failed">Update fehlgeschlagen: %1$s</string>
+
     <string name="settings_permissions">Berechtigungen</string>
     <string name="settings_perm_sms">SMS senden</string>
     <string name="settings_perm_contacts">Kontakte lesen</string>
@@ -197,6 +208,13 @@
     <string name="notif_done_dispatched">%1$d Empfänger bedient</string>
     <string name="notif_done_skipped">, %1$d übersprungen</string>
     <string name="notif_done_failed">, %1$d fehlgeschlagen</string>
+    <string name="notif_update_title">Update verfügbar</string>
+    <string name="notif_update_text">Version %1$s liegt bereit. Installation über Einstellungen → App-Version.</string>
+    <string name="notif_update_done_title">Update installiert</string>
+    <string name="notif_update_done_text">Die App läuft jetzt in der neuen Version.</string>
+    <string name="notif_update_failed_title">Update fehlgeschlagen</string>
+    <string name="notif_update_failed_text">%1$s</string>
+
     <string name="notif_aborted_title">Aussendung abgebrochen</string>
     <string name="notif_aborted_text">%1$s. Bis dahin bedient: %2$d Empfänger.</string>
 </resources>
