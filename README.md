@@ -20,6 +20,7 @@ und wie sieht man es sofort, wenn es doch passiert?**
 - [Datenschutz](#datenschutz)
 - [Android-App bauen](#android-app-bauen)
 - [Release-APK signieren](#release-apk-signieren)
+- [APK herunterladen](#apk-herunterladen)
 - [Sideload-Installation](#sideload-installation)
 - [Backend-Deployment](#backend-deployment)
 - [.env-Felder](#env-felder)
@@ -255,6 +256,32 @@ unsigniert und nicht installierbar.
 $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs \
   app/build/outputs/apk/release/app-release.apk
 ```
+
+---
+
+## APK herunterladen
+
+Am schnellsten über GitHub Actions — dort steht ein Android-SDK bereit, es
+muss also lokal nichts installiert werden.
+
+1. Im Repository auf **Actions** → Workflow **Android** → den obersten
+   (grünen) Lauf des gewünschten Branches öffnen.
+2. Ganz unten unter **Artifacts** liegt **`ff-sms-tool-debug-apk`**.
+   Herunterladen und entpacken — GitHub packt Artefakte immer in ein ZIP.
+3. Die enthaltene `app-debug.apk` auf das Gerät kopieren und wie unten
+   beschrieben installieren.
+
+Der Workflow läuft bei jedem Push auf `android/**` und lässt sich unter
+**Actions → Android → Run workflow** auch von Hand starten.
+
+> Das ist ein **Debug-APK**: mit Androids Debug-Schlüssel signiert, also sofort
+> installierbar, aber nicht für den Dauerbetrieb gedacht. Die Application-ID
+> endet auf `.debug`, es läuft daher parallel zu einer später selbst signierten
+> Release-Version. Für das Gerät, das die echten Alarme versendet, das
+> Release-APK nach der Anleitung oben bauen — nur so bleiben Updates über
+> dieselbe Installation möglich, ohne dass Verteiler und Verlauf verlorengehen.
+>
+> GitHub löscht Artefakte standardmäßig nach 90 Tagen.
 
 ---
 
