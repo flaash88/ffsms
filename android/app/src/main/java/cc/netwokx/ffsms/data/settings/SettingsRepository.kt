@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import cc.netwokx.ffsms.BuildConfig
+import java.security.MessageDigest
+import java.security.SecureRandom
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -25,6 +27,9 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  * @param maxSegmentsPerDay harte Obergrenze pro Kalendertag, ueber alle
  *        Kampagnen hinweg. Das ist die Sicherung, die einen 2100er-Vorfall
  *        auch dann noch stoppt, wenn alles andere versagt hat.
+ * @param pinProtected ob Serverzugang und Obergrenzen mit einer PIN gegen
+ *        versehentliches Verstellen gesichert sind. Nur die Tatsache, nie
+ *        die PIN selbst - die verlaesst das Repository nicht.
  */
 data class AppSettings(
     val backendUrl: String,
@@ -34,6 +39,7 @@ data class AppSettings(
     val warnThresholdSegments: Int,
     val maxSegmentsPerCampaign: Int,
     val maxSegmentsPerDay: Int,
+    val pinProtected: Boolean,
 ) {
     val backendConfigured: Boolean
         get() = backendUrl.isNotBlank() && apiKey.isNotBlank()
@@ -55,6 +61,7 @@ class SettingsRepository(private val context: Context) {
         val WARN_THRESHOLD = intPreferencesKey("warn_threshold")
         val MAX_PER_CAMPAIGN = intPreferencesKey("max_per_campaign")
         val MAX_PER_DAY = intPreferencesKey("max_per_day")
+        val ADMIN_PIN = stringPreferencesKey("admin_pin")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -68,6 +75,7 @@ class SettingsRepository(private val context: Context) {
             warnThresholdSegments = p[Keys.WARN_THRESHOLD] ?: AppSettings.DEFAULT_WARN_THRESHOLD,
             maxSegmentsPerCampaign = p[Keys.MAX_PER_CAMPAIGN] ?: AppSettings.DEFAULT_MAX_PER_CAMPAIGN,
             maxSegmentsPerDay = p[Keys.MAX_PER_DAY] ?: AppSettings.DEFAULT_MAX_PER_DAY,
+            pinProtected = p[Keys.ADMIN_PIN] != null,
         )
     }
 
@@ -91,6 +99,39 @@ class SettingsRepository(private val context: Context) {
     suspend fun setMaxPerCampaign(value: Int) = put(Keys.MAX_PER_CAMPAIGN, value.coerceAtLeast(1))
 
     suspend fun setMaxPerDay(value: Int) = put(Keys.MAX_PER_DAY, value.coerceAtLeast(1))
+
+    /**
+     * PIN setzen.
+     *
+     * Gespeichert wird "salz:hash", nicht die PIN. Das schuetzt nicht gegen
+     * jemanden, der das Geraet in der Hand hat und Root besitzt - es soll
+     * verhindern, dass die PIN in einem Backup oder in einem Datenauszug
+     * einfach ablesbar danebensteht. Der Zweck der Sperre ist ohnehin ein
+     * anderer: das versehentliche Verstellen im Vorbeigehen.
+     */
+    suspend fun setAdminPin(pin: String) {
+        val salt = ByteArray(8).also { SecureRandom().nextBytes(it) }.toHex()
+        put(Keys.ADMIN_PIN, "$salt:${hash(salt, pin)}")
+    }
+
+    suspend fun clearAdminPin() {
+        context.dataStore.edit { it.remove(Keys.ADMIN_PIN) }
+    }
+
+    /** Ohne gesetzte PIN ist alles offen - dann trifft jede Eingabe zu. */
+    suspend fun checkAdminPin(pin: String): Boolean {
+        val stored = context.dataStore.data.first()[Keys.ADMIN_PIN] ?: return true
+        val salt = stored.substringBefore(':', "")
+        val expected = stored.substringAfter(':', "")
+        return salt.isNotEmpty() && hash(salt, pin) == expected
+    }
+
+    private fun hash(salt: String, pin: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest("$salt$pin".toByteArray())
+            .toHex()
+
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
     private suspend fun <T> put(key: Preferences.Key<T>, value: T) {
         context.dataStore.edit { it[key] = value }

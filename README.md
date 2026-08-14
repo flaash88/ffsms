@@ -348,6 +348,41 @@ Weg.
 2. **Einstellungen** → Backend-URL, API-Key und Geräte-Kennung eintragen,
    **Verbindung testen**, dann **Verbrauchszahlen übertragen** einschalten.
 3. **Verfassen** → beim ersten Senden fragt die App nach `SEND_SMS`.
+4. **Einstellungen → PIN einrichten**, bevor das Gerät weitergegeben wird.
+
+### Sicherung gegen versehentliches Verstellen
+
+Auf einem geteilten Gerät ist eine PIN empfehlenswert. Sie sichert
+**Serverzugang und Grenzwerte** — die Adresse, den Schlüssel, die
+Geräte-Kennung, den Übertragungsschalter und die drei Zahlen für Warnschwelle
+und Obergrenzen.
+
+Gesperrt heißt dabei **lesbar, aber nicht änderbar**: die Werte stehen weiter
+da, nur eben als Text statt als Eingabefeld. Wer am Telefon gefragt wird,
+welche Serveradresse eingestellt ist, kann nachsehen, ohne die PIN zu
+brauchen — und genau dieses Nachsehen ist der Vorgang, bei dem sonst
+versehentlich etwas verstellt wird. Der API-Key erscheint nur als
+„hinterlegt"; er ist ein Geheimnis und kein Diagnosewert.
+
+Nicht gesperrt sind Verfassen, Verteiler, Verlauf, Berechtigungen und die
+Update-Suche. Ein Kollege soll senden, Empfänger pflegen und eine fehlende
+Berechtigung nachreichen können, ohne jemanden anrufen zu müssen.
+
+Die Freigabe gilt nur für den aktuellen Besuch: sobald die App in den
+Hintergrund geht, ist wieder zu. Sonst wandert das Handy mit offener Sperre
+weiter.
+
+> **Die PIN lässt sich nicht wiederherstellen.** Ist sie vergessen, hilft nur
+> eine Neuinstallation, und dabei gehen Verteiler und Verlauf verloren. Sie
+> gehört in den Passwortmanager der Feuerwehr. Der Dialog sagt das beim
+> Einrichten auch und verlangt die PIN zweimal — eine vertippte PIN fiele
+> sonst erst auf, wenn sie gebraucht wird.
+
+Die Sperre hält niemanden auf, der die App zerlegen will; sie ist gegen das
+versehentliche Verstellen im Vorbeigehen gerichtet. Das ist hier der reale
+Fall: die Tagesobergrenze ist die Sicherung, die einen zweiten
+2100er-Vorfall stoppt, und sie steht in einem Zahlenfeld, das sich mit einem
+Fingertipp ändern lässt.
 
 Die Berechtigung `SEND_SMS` wird bewusst erst beim ersten Sendeversuch
 abgefragt — beim App-Start wäre der Zusammenhang für den Benutzer nicht

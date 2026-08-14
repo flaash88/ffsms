@@ -37,6 +37,13 @@ data class SettingsUiState(
     val test: ConnectionTest = ConnectionTest.Idle,
     val saved: Boolean = false,
     val update: UpdateState = UpdateState.Idle,
+    /**
+     * Nur im Speicher, absichtlich nicht in DataStore: die Freigabe gilt fuer
+     * den aktuellen Besuch der Einstellungen und ist wieder zu, sobald jemand
+     * den Bildschirm verlaesst oder die App in den Hintergrund geht.
+     */
+    val unlocked: Boolean = false,
+    val pinError: Boolean = false,
 )
 
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
@@ -55,6 +62,35 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(segmentsToday = campaigns.segmentsToday()) }
         }
     }
+
+    /**
+     * Gibt die geschuetzten Einstellungen frei.
+     *
+     * Kein Zaehler fuer Fehlversuche und keine Sperrzeit. Die PIN haelt
+     * niemanden auf, der die App zerlegen will - sie soll verhindern, dass
+     * beim Suchen nach etwas anderem versehentlich die Serveradresse oder ein
+     * Limit verstellt wird. Eine Sperre nach drei Fehlversuchen wuerde in
+     * genau dem Moment im Weg stehen, in dem jemand unter Zeitdruck etwas
+     * richtigstellen muss.
+     */
+    fun unlock(pin: String) {
+        viewModelScope.launch {
+            val ok = repo.checkAdminPin(pin)
+            _state.update { it.copy(unlocked = ok, pinError = !ok) }
+        }
+    }
+
+    fun lock() = _state.update { it.copy(unlocked = false, pinError = false) }
+
+    fun pinErrorShown() = _state.update { it.copy(pinError = false) }
+
+    /** Neue PIN setzen. Nur moeglich, wenn bereits freigegeben ist. */
+    fun setPin(pin: String) = update {
+        repo.setAdminPin(pin)
+        _state.update { it.copy(unlocked = true) }
+    }
+
+    fun removePin() = update { repo.clearAdminPin() }
 
     fun setBackendUrl(v: String) = update { repo.setBackendUrl(v) }
 
