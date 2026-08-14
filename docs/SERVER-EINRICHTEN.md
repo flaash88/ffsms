@@ -174,6 +174,10 @@ TUNNEL_TOKEN=        # bleibt vorerst leer, kommt in Schritt 5
 
 REPORT_TITLE="FF Kühwiesen"     # Anfuehrungszeichen wegen des Leerzeichens
 TZ_REPORT=Europe/Vienna
+
+# Passwort fuer die Download-Seite /download, ueber die die App beim ersten
+# Mal auf ein Geraet kommt. Leer = Seite abgeschaltet (404).
+DOWNLOAD_PASSWORD=
 ```
 
 > Die Datei enthält alle Geheimnisse im Klartext. Sie steht in `.gitignore` und

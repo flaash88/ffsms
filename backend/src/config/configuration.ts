@@ -36,6 +36,8 @@ export interface AppConfig {
   reportTitle: string;
   /** Verzeichnis mit app-release.apk und release.json fuer den Update-Kanal. */
   updateDir: string;
+  /** Passwort der Download-Seite. null schaltet sie ab. */
+  downloadPassword: string | null;
 }
 
 /**
@@ -107,4 +109,7 @@ export default (): AppConfig => ({
   weeklyReportCron: process.env.WEEKLY_REPORT_CRON ?? '0 20 * * 0',
   reportTitle: process.env.REPORT_TITLE ?? 'FF-SMS',
   updateDir: process.env.UPDATE_DIR ?? '/data/updates',
+  // Ohne Wert bleibt /download abgeschaltet (404). Kein Passwort darf nicht
+  // "kein Schutz" bedeuten.
+  downloadPassword: process.env.DOWNLOAD_PASSWORD?.trim() || null,
 });

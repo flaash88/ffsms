@@ -411,6 +411,7 @@ erreichbaren PostgreSQL-Instanz und denselben Umgebungsvariablen.
 | `TZ_REPORT` | – | Zeitzone für Reports und Monatsgrenzen. Standard `Europe/Vienna`. |
 | `WEEKLY_REPORT_CRON` | – | Standard `0 20 * * 0` (sonntags 20:00 Ortszeit). |
 | `REPORT_TITLE` | – | Klartextname in der Betreffzeile, z. B. `FF Kühwiesen`. |
+| `DOWNLOAD_PASSWORD` | – | Passwort der Download-Seite `/download`. Leer = Seite abgeschaltet (404). |
 
 `API_KEYS` verknüpft Schlüssel und Geräte-Kennung fest miteinander. Liefert ein
 Gerät Daten unter einer anderen `device_id` ein, antwortet der Server mit 403.
@@ -662,6 +663,30 @@ jeder Abfrage frisch gelesen.
 { "version_code": 2, "version_name": "1.0.1", "notes": "Zählt jetzt auch Umlaute richtig." }
 ```
 
+### Erstinstallation: die Download-Seite
+
+Der Update-Kanal setzt eine bereits installierte App voraus — sie ist es ja,
+die den API-Key mitschickt. Beim ersten Mal gibt es die noch nicht. Für diesen
+Fall liefert dasselbe Backend unter **`/download`** eine Seite aus, die sich im
+Browser mit einem Passwort öffnen lässt:
+
+```
+https://ffsms.networkx.cc/download
+```
+
+Benutzername beliebig, Passwort ist `DOWNLOAD_PASSWORD` aus der `.env`. Die
+Seite zeigt Version, Größe, Datum und Prüfsumme des hinterlegten APK, dazu die
+Installationsschritte inklusive des Play-Protect-Falls. Der Download heißt
+`ff-sms-<version>.apk`, damit im Download-Ordner nicht drei Dateien namens
+`app-release(2).apk` nebeneinander liegen.
+
+Es ist dieselbe Datei aus demselben Verzeichnis — wer ein neues APK nach
+`updates/` kopiert, hat damit automatisch auch die Download-Seite aktualisiert.
+
+> **Ohne gesetztes `DOWNLOAD_PASSWORD` antwortet `/download` mit 404.** Ein
+> vergessener Eintrag in der `.env` soll das APK nicht offen ins Netz stellen —
+> „kein Passwort" darf nicht „kein Schutz" bedeuten.
+
 ### Auf dem Gerät
 
 Der Kollege bekommt binnen eines Tages die Meldung „Update verfügbar" und
@@ -694,6 +719,8 @@ installieren. Danach nicht mehr.
 | HTTP 404 beim Prüfen | `app-release.apk` oder `release.json` fehlt im Update-Verzeichnis |
 | „Prüfsumme stimmt nicht" | Datei unvollständig übertragen — `scp` wiederholen |
 | Android bricht die Installation ab | Signatur weicht ab: das installierte APK stammt aus einem anderen Keystore (z. B. noch das Debug-APK) |
+| `/download` antwortet 404 | `DOWNLOAD_PASSWORD` ist in der `.env` leer — die Seite ist dann bewusst abgeschaltet |
+| `/download` fragt nicht nach dem Passwort | Änderung an der `.env` ohne `./update.sh` — der Container liest sie nur beim Start |
 
 ---
 

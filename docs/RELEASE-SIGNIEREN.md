@@ -174,6 +174,10 @@ uebersprungen.`
    ```
    Alternativ per Dateimanager — dann greift die Sperre und muss wie in der
    README beschrieben aufgehoben werden.
+
+   **Auf einem fremden Gerät ohne Kabel** führt der Weg über die
+   Download-Seite (siehe Schritt 5): Link durchgeben, Passwort durchsagen,
+   der Kollege lädt das APK selbst herunter.
 3. In der App Backend-URL, API-Key und Geräte-Kennung eintragen, Verteiler neu
    anlegen.
 
@@ -198,6 +202,40 @@ set -a; . ./.env; set +a
 curl -s -H "X-API-Key: ${API_KEYS#*:}" \
   https://ffsms.networkx.cc/api/v1/update/manifest
 ```
+
+### Download-Seite für die Erstinstallation
+
+Dieselbe Datei lässt sich auch im Browser holen — gedacht für das erste Mal
+auf einem fremden Gerät, wo es noch keine App gibt, die einen API-Key
+mitschicken könnte.
+
+Einmalig ein Passwort setzen:
+
+```bash
+cd ~/ffsms/backend
+echo "DOWNLOAD_PASSWORD=$(openssl rand -base64 12)" >> .env
+grep DOWNLOAD_PASSWORD .env      # notieren
+./update.sh
+```
+
+Danach erreichbar unter:
+
+```
+https://ffsms.networkx.cc/download
+```
+
+Der Browser fragt nach Benutzername und Passwort. **Der Benutzername ist
+beliebig** — es gibt nur ein Passwort, und ein zweites Feld, das niemand kennt,
+wäre kein zusätzlicher Schutz, sondern nur eine weitere Sache, die man dem
+Kollegen durchsagen und die er falsch eintippen kann.
+
+Die Seite zeigt Version, Größe, Datum und Prüfsumme des hinterlegten APK samt
+Installationsschritten. Neues APK nach `updates/` kopiert heißt: die Seite ist
+mit aktualisiert, ohne weiteres Zutun.
+
+> **Bleibt `DOWNLOAD_PASSWORD` leer, antwortet `/download` mit 404.** Kein
+> Passwort heißt „Seite gibt es nicht", nicht „Seite ohne Schutz" — ein
+> vergessener Eintrag soll das APK nicht offen ins Netz stellen.
 
 > Beim Kopieren von Hand: **die spitzen Klammern der Platzhalter gehören nicht
 > in den Befehl.**

@@ -38,6 +38,7 @@ services:
       WEEKLY_REPORT_CRON: ${WEEKLY_REPORT_CRON:-0 20 * * 0}
       REPORT_TITLE: ${REPORT_TITLE:-FF-SMS}
       UPDATE_DIR: /data/updates
+      DOWNLOAD_PASSWORD: ${DOWNLOAD_PASSWORD:-}
     volumes:
       # Hier liegen app-release.apk und release.json fuer den Update-Kanal.
       # Nur lesend eingebunden: der Dienst soll das APK ausliefern, nicht
