@@ -158,9 +158,15 @@
     <string name="settings_saved">Gespeichert.</string>
     <string name="settings_number_invalid">Bitte eine Zahl größer als 0 eingeben.</string>
 
+    <!-- Serverkonfiguration: eigener Bildschirm hinter der PIN -->
+    <string name="server_config_title">Serverkonfiguration</string>
+    <string name="server_config_unset">Keine Adresse eingetragen</string>
+    <string name="server_config_sync_on">Verbrauchszahlen werden übertragen</string>
+    <string name="server_config_sync_off">Verbrauchszahlen werden nicht übertragen</string>
+
     <!-- Sperre gegen versehentliches Verstellen -->
     <string name="settings_lock_none">Nicht gesichert</string>
-    <string name="settings_lock_none_desc">Serverzugang und Grenzwerte lassen sich derzeit von jedem ändern, der die App öffnet. Mit einer PIN bleiben sie sichtbar, aber nicht mehr verstellbar.</string>
+    <string name="settings_lock_none_desc">Dieser Bildschirm ist derzeit für jeden erreichbar, der die App öffnet. Mit einer PIN kommt hier nur noch herein, wer sie kennt. Grenzwerte, App-Version und Berechtigungen bleiben in den Einstellungen offen.</string>
     <string name="settings_lock_set">PIN einrichten</string>
     <string name="settings_lock_set_desc">Mindestens %1$d Ziffern.</string>
     <string name="settings_lock_forgot_warning">Die PIN lässt sich nicht wiederherstellen. Ist sie vergessen, hilft nur eine Neuinstallation — und dabei gehen Verteiler und Verlauf verloren. Am besten im Passwortmanager der Feuerwehr hinterlegen.</string>
@@ -168,7 +174,7 @@
     <string name="settings_lock_pin_repeat">PIN wiederholen</string>
     <string name="settings_lock_mismatch">Die beiden Eingaben stimmen nicht überein.</string>
     <string name="settings_lock_closed">Gesichert</string>
-    <string name="settings_lock_closed_desc">Serverzugang und Grenzwerte sind lesbar, aber gegen Verstellen gesichert. Zum Ändern die PIN eingeben.</string>
+    <string name="settings_lock_closed_desc">Zum Ändern der Serverdaten die PIN eingeben.</string>
     <string name="settings_lock_unlock">Entsperren</string>
     <string name="settings_lock_wrong">PIN stimmt nicht.</string>
     <string name="settings_lock_open">Entsperrt</string>
@@ -176,10 +182,6 @@
     <string name="settings_lock_now">Wieder sperren</string>
     <string name="settings_lock_change">PIN ändern</string>
     <string name="settings_lock_remove">Sicherung entfernen</string>
-    <string name="settings_locked_key_set">hinterlegt</string>
-    <string name="settings_locked_key_missing">nicht hinterlegt</string>
-    <string name="state_on">ein</string>
-    <string name="state_off">aus</string>
 
     <string name="settings_update">App-Version</string>
     <string name="settings_version">Installiert: %1$s (Build %2$d)</string>

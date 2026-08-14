@@ -345,48 +345,52 @@ Weg.
    oder von Hand). Beim ersten Kontaktzugriff fragt die App nach der
    Berechtigung; sie lässt sich ablehnen, dann funktioniert die manuelle
    Eingabe weiter.
-2. **Einstellungen** → Backend-URL, API-Key und Geräte-Kennung eintragen,
-   **Verbindung testen**, dann **Verbrauchszahlen übertragen** einschalten.
+2. **Einstellungen → Serverkonfiguration** → Backend-URL, API-Key und
+   Geräte-Kennung eintragen, **Verbindung testen**, dann
+   **Verbrauchszahlen übertragen** einschalten.
 3. **Verfassen** → beim ersten Senden fragt die App nach `SEND_SMS`.
-4. **Einstellungen → PIN einrichten**, bevor das Gerät weitergegeben wird.
+4. **Serverkonfiguration → PIN einrichten**, bevor das Gerät weitergegeben
+   wird.
 
-### Sicherung gegen versehentliches Verstellen
+### Serverkonfiguration hinter einer PIN
 
-Auf einem geteilten Gerät ist eine PIN empfehlenswert. Sie sichert
-**Serverzugang und Grenzwerte** — die Adresse, den Schlüssel, die
-Geräte-Kennung, den Übertragungsschalter und die drei Zahlen für Warnschwelle
-und Obergrenzen.
+Adresse, API-Key, Geräte-Kennung und der Übertragungsschalter liegen auf einem
+**eigenen Bildschirm**, erreichbar über die erste Zeile in den Einstellungen.
+Ist eine PIN gesetzt, kommt dort nur herein, wer sie kennt.
 
-Gesperrt heißt dabei **lesbar, aber nicht änderbar**: die Werte stehen weiter
-da, nur eben als Text statt als Eingabefeld. Wer am Telefon gefragt wird,
-welche Serveradresse eingestellt ist, kann nachsehen, ohne die PIN zu
-brauchen — und genau dieses Nachsehen ist der Vorgang, bei dem sonst
-versehentlich etwas verstellt wird. Der API-Key erscheint nur als
-„hinterlegt"; er ist ein Geheimnis und kein Diagnosewert.
+**In den Einstellungen bleiben offen:** Grenzwerte, App-Version samt
+Update-Suche, Berechtigungen, Verbindung testen und Datenschutz. Ein Kollege
+soll senden, eine fehlende Berechtigung nachreichen und prüfen können, ob der
+Server erreichbar ist, ohne jemanden anzurufen.
 
-Nicht gesperrt sind Verfassen, Verteiler, Verlauf, Berechtigungen und die
-Update-Suche. Ein Kollege soll senden, Empfänger pflegen und eine fehlende
-Berechtigung nachreichen können, ohne jemanden anrufen zu müssen.
+Die eingestellte Adresse steht als Untertitel in der Zeile, obwohl der
+Bildschirm dahinter gesperrt ist. Wer am Telefon gefragt wird, welcher Server
+eingetragen ist, soll nachsehen können — und genau dieses Nachsehen ist der
+Vorgang, bei dem sonst versehentlich etwas verstellt wird. Der Schlüssel steht
+nicht dabei; er ist ein Geheimnis und kein Diagnosewert.
 
-Die Freigabe gilt nur für den aktuellen Besuch: sobald die App in den
-Hintergrund geht, ist wieder zu. Sonst wandert das Handy mit offener Sperre
-weiter.
+Warum ausgerechnet diese vier Werte: sie werden einmal eingerichtet und danach
+nie wieder angefasst. Ein verstellter Grenzwert fällt beim nächsten Verfassen
+auf. Eine verstellte Serveradresse fällt **gar nicht** auf — die App sendet
+weiter SMS, nur die Verbrauchszahlen kommen nirgends mehr an. Bemerkt wird das
+erst, wenn die Rechnung eine Zahl nennt, der man nichts mehr entgegenhalten
+kann.
+
+Die Freigabe gilt nur für den aktuellen Besuch: geht die App in den
+Hintergrund, ist wieder zu. Geprüft wird beim Öffnen des Bildschirms, nicht
+beim Antippen der Zeile — so bleibt die Sperre auch dann wirksam, wenn Android
+den Bildschirm aus dem Backstack wiederherstellt.
 
 > **Die PIN lässt sich nicht wiederherstellen.** Ist sie vergessen, hilft nur
 > eine Neuinstallation, und dabei gehen Verteiler und Verlauf verloren. Sie
-> gehört in den Passwortmanager der Feuerwehr. Der Dialog sagt das beim
-> Einrichten auch und verlangt die PIN zweimal — eine vertippte PIN fiele
-> sonst erst auf, wenn sie gebraucht wird.
+> gehört in den Passwortmanager der Feuerwehr. Der Dialog verlangt sie beim
+> Einrichten zweimal — eine vertippte PIN fiele sonst erst auf, wenn sie
+> gebraucht wird.
 
-Die Sperre hält niemanden auf, der die App zerlegen will; sie ist gegen das
-versehentliche Verstellen im Vorbeigehen gerichtet. Das ist hier der reale
-Fall: die Tagesobergrenze ist die Sicherung, die einen zweiten
-2100er-Vorfall stoppt, und sie steht in einem Zahlenfeld, das sich mit einem
-Fingertipp ändern lässt.
-
-Die Berechtigung `SEND_SMS` wird bewusst erst beim ersten Sendeversuch
-abgefragt — beim App-Start wäre der Zusammenhang für den Benutzer nicht
-erkennbar.
+Gespeichert wird `salz:hash`, nicht die PIN. Kein Zähler für Fehlversuche und
+keine Sperrzeit: die PIN hält niemanden auf, der die App zerlegen will, und
+eine Sperre stünde genau dann im Weg, wenn unter Zeitdruck etwas
+richtigzustellen ist.
 
 ---
 

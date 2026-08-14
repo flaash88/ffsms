@@ -33,6 +33,7 @@ import cc.netwokx.ffsms.ui.groups.GroupsScreen
 import cc.netwokx.ffsms.ui.history.CampaignDetailScreen
 import cc.netwokx.ffsms.ui.history.HistoryScreen
 import cc.netwokx.ffsms.ui.privacy.PrivacyScreen
+import cc.netwokx.ffsms.ui.settings.ServerConfigScreen
 import cc.netwokx.ffsms.ui.settings.SettingsScreen
 import cc.netwokx.ffsms.ui.theme.FfSmsTheme
 
@@ -53,6 +54,7 @@ private sealed class Dest(val route: String) {
     data object History : Dest("history")
     data object Settings : Dest("settings")
     data object Privacy : Dest("privacy")
+    data object ServerConfig : Dest("serverconfig")
     data object GroupDetail : Dest("groups/{groupId}") {
         fun of(groupId: Long) = "groups/$groupId"
     }
@@ -122,7 +124,13 @@ private fun FfSmsApp() {
                 }
             }
             composable(Dest.Settings.route) {
-                SettingsScreen(onOpenPrivacy = { navController.navigate(Dest.Privacy.route) })
+                SettingsScreen(
+                    onOpenPrivacy = { navController.navigate(Dest.Privacy.route) },
+                    onOpenServerConfig = { navController.navigate(Dest.ServerConfig.route) },
+                )
+            }
+            composable(Dest.ServerConfig.route) {
+                ServerConfigScreen(onBack = { navController.popBackStack() })
             }
             composable(Dest.Privacy.route) {
                 PrivacyScreen(onBack = { navController.popBackStack() })
