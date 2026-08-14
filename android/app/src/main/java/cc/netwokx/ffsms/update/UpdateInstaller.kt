@@ -67,52 +67,57 @@ class UpdateInstaller(private val context: Context) {
             if (expectedSize > 0) setSize(expectedSize)
         }
 
-        var sessionId = -1
-        var session: PackageInstaller.Session? = null
+        val sessionId = try {
+            installer.createSession(params)
+        } catch (e: Exception) {
+            return e.message ?: e::class.java.simpleName
+        }
+
+        // Merkt sich, ob die Sitzung an das System uebergeben wurde. Alles
+        // andere - Pruefsummenfehler, Abbruch, Exception - wird im finally
+        // aufgeraeumt, damit keine halben Sitzungen zurueckbleiben.
+        var committed = false
+
         try {
-            sessionId = installer.createSession(params)
-            session = installer.openSession(sessionId)
+            installer.openSession(sessionId).use { session ->
+                val digest = MessageDigest.getInstance("SHA-256")
+                var written = 0L
 
-            val digest = MessageDigest.getInstance("SHA-256")
-            var written = 0L
+                session.openWrite("ffsms", 0, if (expectedSize > 0) expectedSize else -1L)
+                    .use { out ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read <= 0) break
+                            digest.update(buffer, 0, read)
+                            out.write(buffer, 0, read)
+                            written += read
+                        }
+                        session.fsync(out)
+                    }
 
-            session.openWrite("ffsms", 0, expectedSize.takeIf { it > 0 } ?: -1L).use { out ->
-                val buffer = ByteArray(64 * 1024)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read <= 0) break
-                    digest.update(buffer, 0, read)
-                    out.write(buffer, 0, read)
-                    written += read
-                }
-                session.fsync(out)
-            }
+                val actual = digest.digest().joinToString("") { "%02x".format(it) }
 
-            val actual = digest.digest().joinToString("") { "%02x".format(it) }
-            if (!actual.equals(expectedSha256, ignoreCase = true)) {
-                // Abbruch VOR dem Commit: ein unvollstaendig oder falsch
+                // Rueckgabe VOR dem Commit: ein unvollstaendig oder falsch
                 // uebertragenes APK darf dem System gar nicht erst angeboten
-                // werden.
-                session.abandon()
-                session = null
-                return "Pruefsumme stimmt nicht (erwartet $expectedSha256, erhalten $actual)"
-            }
+                // werden. Das finally verwirft die Sitzung.
+                if (!actual.equals(expectedSha256, ignoreCase = true)) {
+                    return "Pruefsumme stimmt nicht (erwartet $expectedSha256, erhalten $actual)"
+                }
+                if (expectedSize > 0 && written != expectedSize) {
+                    return "Unvollstaendiger Download ($written von $expectedSize Bytes)"
+                }
 
-            if (expectedSize > 0 && written != expectedSize) {
-                session.abandon()
-                session = null
-                return "Unvollstaendiger Download ($written von $expectedSize Bytes)"
+                session.commit(statusIntent(sessionId).intentSender)
+                committed = true
             }
-
-            session.commit(statusIntent(sessionId).intentSender)
-            session = null
             return null
         } catch (e: Exception) {
-            runCatching { session?.abandon() }
-            if (sessionId >= 0) runCatching { installer.abandonSession(sessionId) }
             return e.message ?: e::class.java.simpleName
         } finally {
-            runCatching { session?.close() }
+            // Nach einem Commit gehoert die Sitzung dem System und darf nicht
+            // mehr verworfen werden.
+            if (!committed) runCatching { installer.abandonSession(sessionId) }
         }
     }
 
