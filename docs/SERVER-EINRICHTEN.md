@@ -158,7 +158,7 @@ NTFY_TOKEN=          # bleibt vorerst leer, kommt in Schritt 6
 
 TUNNEL_TOKEN=        # bleibt vorerst leer, kommt in Schritt 5
 
-REPORT_TITLE=FF Kühwiesen
+REPORT_TITLE="FF Kühwiesen"     # Anfuehrungszeichen wegen des Leerzeichens
 TZ_REPORT=Europe/Vienna
 ```
 
@@ -264,6 +264,11 @@ set -a; . ./.env; set +a
 Das prüft nebenbei mit, ob in der `.env` das Richtige steht — ein Tippfehler
 dort fällt hier sofort auf.
 
+> Werte mit Leerzeichen gehören in der `.env` in Anführungszeichen, etwa
+> `WEEKLY_REPORT_CRON="0 20 * * 0"`. Docker Compose kommt auch ohne zurecht,
+> die Shell nicht: sie versucht dann den Teil nach dem ersten Leerzeichen als
+> Befehl auszuführen und meldet z. B. `bash: 20: command not found`.
+
 **Backend von außen:**
 
 ```bash
@@ -349,5 +354,6 @@ schlicht warten und die Logs beobachten.
 | `api` startet nicht, Log nennt `API_KEYS` | `.env` fehlt oder der Eintrag hat nicht das Format `kennung:schluessel` |
 | Meldung kommt nicht am Handy an | Token fehlt in `.env`, oder der Benutzer hat keine Rechte auf dem Topic (`ntfy access ff ff-sms rw`) |
 | `401 unauthorized` bei ntfy, Token sieht richtig aus | Spitze Klammern mitkopiert: `Bearer <tk_...>` statt `Bearer tk_...` |
+| `bash: 20: command not found` beim Einlesen der `.env` | Wert mit Leerzeichen ohne Anführungszeichen, siehe Schritt 7 |
 | `403` beim Upload aus der App | Geräte-Kennung in der App weicht von der in `API_KEYS` ab |
 | ntfy-Links im Handy zeigen ins Leere | `NTFY_BASE_URL` stimmt nicht mit dem Hostnamen im Tunnel überein |
