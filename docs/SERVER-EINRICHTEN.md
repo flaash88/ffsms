@@ -17,39 +17,78 @@ von innen nach außen auf.
 
 ---
 
-## Schritt 1 — Docker installieren
+## Schritt 0 — Root werden
 
-Debians eigene Docker-Pakete sind meist veraltet. Offizielles Repository:
+Bei einer Minimal-Installation von Debian ist `sudo` oft **gar nicht
+vorhanden**, und `usermod` liegt in `/usr/sbin`, das im Suchpfad normaler
+Benutzer fehlt. Beides führt zu `command not found`. Deshalb zuerst:
 
 ```bash
-sudo apt update
-sudo apt install -y ca-certificates curl git
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/debian/gpg \
+su -
+```
+
+Das **`-` ist wichtig** — nur damit bekommst du Roots vollständigen Suchpfad.
+Gefragt wird nach dem **Root-Passwort**, nicht nach deinem eigenen.
+
+Dann `sudo` nachinstallieren und den eigenen Benutzer berechtigen (`ffsms`
+durch den eigenen Benutzernamen ersetzen):
+
+```bash
+apt update
+apt install -y sudo ca-certificates curl git
+adduser ffsms sudo
+```
+
+Die folgenden Schritte laufen weiter als root — deshalb steht in Schritt 1
+kein `sudo` davor.
+
+> Ist bereits `sudo` vorhanden und der eigene Benutzer berechtigt, kann
+> Schritt 0 übersprungen und den Befehlen in Schritt 1 ein `sudo`
+> vorangestellt werden.
+
+---
+
+## Schritt 1 — Docker installieren
+
+Debians eigene Docker-Pakete sind meist veraltet. Offizielles Repository
+(als root, siehe Schritt 0):
+
+```bash
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg \
   -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
 
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
 https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  > /etc/apt/sources.list.d/docker.list
 
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io \
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io \
   docker-buildx-plugin docker-compose-plugin
 ```
 
-Dich selbst zur Docker-Gruppe hinzufügen, damit kein `sudo` nötig ist:
+Den eigenen Benutzer zur Docker-Gruppe hinzufügen, damit später kein `sudo`
+nötig ist, und die Root-Sitzung verlassen:
 
 ```bash
-sudo usermod -aG docker "$USER"
+usermod -aG docker ffsms
+exit
 ```
 
-**Danach ab- und wieder anmelden**, sonst greift die Gruppenzugehörigkeit
-nicht. Prüfen:
+**Jetzt einmal vollständig ab- und wieder anmelden** — die SSH-Sitzung
+schließen und neu verbinden. Ohne das kennt die Shell die neue
+Gruppenzugehörigkeit nicht. Prüfen:
 
 ```bash
 docker run --rm hello-world
 ```
+
+Erscheint „Hello from Docker!", ist alles bereit.
+
+> **Läuft der Server als LXC-Container** (z. B. auf Proxmox), braucht der
+> Container `nesting=1` in seinen Optionen, sonst startet der Docker-Daemon
+> nicht. Das zeigt sich genau hier beim `hello-world`.
 
 ---
 
@@ -268,6 +307,10 @@ schlicht warten und die Logs beobachten.
 |---|---|
 | `curl` von außen antwortet nicht | Tunnel läuft nicht: `docker compose logs cloudflared` |
 | `502` von Cloudflare | Public Hostname zeigt auf `localhost` statt auf `api` bzw. `ntfy` |
+| `sudo: command not found` | Minimal-Installation ohne sudo - siehe Schritt 0 |
+| `usermod: command not found` | `/usr/sbin` fehlt im Suchpfad: `su -` mit Bindestrich verwenden |
+| `docker: permission denied` | Nach `usermod -aG docker` nicht neu angemeldet |
+| Docker-Daemon startet nicht (LXC) | Container braucht `nesting=1` |
 | `api` startet nicht, Log nennt `API_KEYS` | `.env` fehlt oder der Eintrag hat nicht das Format `kennung:schluessel` |
 | Meldung kommt nicht am Handy an | Token fehlt in `.env`, oder der Benutzer hat keine Rechte auf dem Topic (`ntfy access ff ff-sms rw`) |
 | `403` beim Upload aus der App | Geräte-Kennung in der App weicht von der in `API_KEYS` ab |
