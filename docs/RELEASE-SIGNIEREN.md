@@ -42,8 +42,19 @@ Auf dem Server ist meist kein Java installiert; `keytool` gehört dazu. Die JRE
 genügt und spart gegenüber dem vollen JDK rund 250 MB:
 
 ```bash
-sudo apt install -y openjdk-17-jre-headless
+sudo apt install -y default-jre-headless
 ```
+
+`default-jre-headless` zieht die zur Debian-Version passende Java-Fassung. Eine
+feste Version wie `openjdk-17-jre-headless` gibt es je nach Debian-Ausgabe
+nicht mehr.
+
+> Falls `sudo` meldet, der Benutzer stehe nicht in der sudoers-Datei: mit
+> `su -` root werden, dort `apt install -y default-jre-headless` und
+> `adduser DEINBENUTZER sudo` ausführen, dann `exit`.
+
+**`keytool` anschließend als normaler Benutzer ausführen, nicht als root** —
+sonst gehört die Keystore-Datei root und ist später nur mit Umwegen zu lesen.
 
 Dann im `android`-Verzeichnis des Projekts — **nicht** in `backend`:
 
@@ -267,7 +278,10 @@ keinem Verhältnis zu zwei Feuerwehrhandys.
 
 | Symptom | Ursache |
 |---|---|
-| `bash: keytool: command not found` | Kein Java installiert - `sudo apt install -y openjdk-17-jre-headless` |
+| `bash: keytool: command not found` | Kein Java installiert - `sudo apt install -y default-jre-headless` |
+| `Package openjdk-17-jre-headless has no installation candidate` | Neuere Debian-Ausgabe - `default-jre-headless` statt einer festen Version |
+| `ffsms is not in the sudoers file` | `su -`, dann `adduser DEINBENUTZER sudo`, dann `exit` |
+| Nach `su` zeigt `~` auf `/root` | `su -` mit Bindestrich verwenden |
 | `cd: android: No such file or directory` | Falsches Verzeichnis: `cd ~/ffsms/android`, nicht aus `backend` heraus |
 | Kein `ff-sms-tool-release`-Artefakt | `KEYSTORE_BASE64` fehlt oder ist abgeschnitten |
 | CI-Fehler „keystore password was incorrect" | `KEYSTORE_PASSWORD` bzw. `KEY_PASSWORD` stimmt nicht |

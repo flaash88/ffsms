@@ -39,6 +39,15 @@ apt install -y sudo ca-certificates curl git
 adduser ffsms sudo
 ```
 
+Prüfen, dass es geklappt hat — die Ausgabe muss `sudo` enthalten:
+
+```bash
+groups ffsms
+```
+
+Fehlt es, greift später kein einziger `sudo`-Befehl, und die Meldung lautet
+dann `ffsms is not in the sudoers file`.
+
 Die folgenden Schritte laufen weiter als root — deshalb steht in Schritt 1
 kein `sudo` davor.
 
