@@ -31,7 +31,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Vorbelegung der Einstellungen. Kann in der App jederzeit geaendert werden.
-        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"https://ffsms.netwokx.cc/\"")
+        buildConfigField("String", "DEFAULT_BACKEND_URL", "\"https://ffsms.networkx.cc/\"")
         buildConfigField("String", "DEFAULT_DEVICE_ID", "\"ff-kuehwiesen-sms\"")
     }
 

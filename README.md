@@ -13,6 +13,12 @@ und wie sieht man es sofort, wenn es doch passiert?**
 
 ---
 
+> **Zum Einrichten:** [docs/SERVER-EINRICHTEN.md](docs/SERVER-EINRICHTEN.md)
+> (Debian, Docker, ntfy, Cloudflare Tunnel) und
+> [docs/RELEASE-SIGNIEREN.md](docs/RELEASE-SIGNIEREN.md) (Keystore, signiertes
+> APK, Updates ausrollen). Beide sind Schritt-für-Schritt-Anleitungen zum
+> Abarbeiten; diese README erklaert dahinter das Warum.
+
 ## Inhalt
 
 - [Warum diese Bauweise](#warum-diese-bauweise)
@@ -792,5 +798,5 @@ Standard belegt — jeweils an genau einer Stelle änderbar:
 | Package-Name | `cc.netwokx.ffsms` (`FF-SMS-Tool` ist als Java-Package nicht gültig) | `android/app/build.gradle.kts` |
 | Geräte-Kennung | `ff-kuehwiesen-sms` | App → Einstellungen, bzw. `DEFAULT_DEVICE_ID` |
 | ntfy-Topic | offen | `NTFY_URL` in `backend/.env` |
-| Backend-URL | `https://ffsms.netwokx.cc/` | App → Einstellungen, bzw. `DEFAULT_BACKEND_URL` |
+| Backend-URL | `https://ffsms.networkx.cc/` | App → Einstellungen, bzw. `DEFAULT_BACKEND_URL` |
 | Warnschwelle Anzeige | 100 SMS | App → Einstellungen |

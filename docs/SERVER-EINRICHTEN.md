@@ -1,0 +1,274 @@
+# Server einrichten
+
+Schritt für Schritt von einem frischen Debian bis zum laufenden Backend mit
+ntfy und Cloudflare Tunnel. Gedacht zum Abarbeiten von oben nach unten.
+
+Am Ende laufen vier Container:
+
+| Container | Aufgabe | Erreichbar |
+|---|---|---|
+| `db` | PostgreSQL | nur intern |
+| `api` | das FF-SMS-Backend | `https://ffsms.networkx.cc` |
+| `ntfy` | Push-Meldungen aufs Handy | `https://ntfy.networkx.cc` |
+| `cloudflared` | Tunnel nach außen | — |
+
+Kein Port muss im Router freigegeben werden. Der Tunnel baut die Verbindung
+von innen nach außen auf.
+
+---
+
+## Schritt 1 — Docker installieren
+
+Debians eigene Docker-Pakete sind meist veraltet. Offizielles Repository:
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl git
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+```
+
+Dich selbst zur Docker-Gruppe hinzufügen, damit kein `sudo` nötig ist:
+
+```bash
+sudo usermod -aG docker "$USER"
+```
+
+**Danach ab- und wieder anmelden**, sonst greift die Gruppenzugehörigkeit
+nicht. Prüfen:
+
+```bash
+docker run --rm hello-world
+```
+
+---
+
+## Schritt 2 — Projekt holen
+
+```bash
+mkdir -p ~/ffsms && cd ~/ffsms
+git clone https://github.com/flaash88/ffsms.git .
+cd backend
+```
+
+---
+
+## Schritt 3 — Geheimnisse erzeugen
+
+Drei Zufallswerte. **Jeden einzeln erzeugen und wegschreiben** — sie werden
+gleich gebraucht:
+
+```bash
+echo "DB_PASSWORD  = $(openssl rand -hex 24)"
+echo "API_KEY      = $(openssl rand -hex 24)"
+echo "NTFY_PASS    = $(openssl rand -hex 12)"
+```
+
+Der `API_KEY` kommt später auch **in die App** (Einstellungen → API-Key).
+Am besten gleich in den Passwortmanager der Feuerwehr.
+
+---
+
+## Schritt 4 — `.env` anlegen
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Auszufüllen:
+
+```ini
+DB_USER=ffsms
+DB_PASSWORD=<der Wert von oben>
+DB_NAME=ffsms
+
+# Format: kennung:schluessel
+API_KEYS=ff-kuehwiesen-sms:<API_KEY von oben>
+
+NTFY_BASE_URL=https://ntfy.networkx.cc
+NTFY_URL=https://ntfy.networkx.cc/ff-sms
+NTFY_TOKEN=          # bleibt vorerst leer, kommt in Schritt 6
+
+TUNNEL_TOKEN=        # bleibt vorerst leer, kommt in Schritt 5
+
+REPORT_TITLE=FF Kühwiesen
+TZ_REPORT=Europe/Vienna
+```
+
+> Die Datei enthält alle Geheimnisse im Klartext. Sie steht in `.gitignore` und
+> darf nicht ins Git. Rechte einschränken:
+> ```bash
+> chmod 600 .env
+> ```
+
+Update-Verzeichnis anlegen (bleibt zunächst leer):
+
+```bash
+mkdir -p updates
+```
+
+---
+
+## Schritt 5 — Cloudflare Tunnel einrichten
+
+Im **Cloudflare-Dashboard**, nicht auf dem Server:
+
+1. **Zero Trust** → **Networks** → **Tunnels** → **Create a tunnel**
+2. Typ **Cloudflared**, Name z. B. `ffsms-heim`
+3. Auf der Installationsseite steht ein Befehl mit einem langen Token nach
+   `--token`. **Nur diesen Token** kopieren (der Teil nach `--token `, beginnt
+   meist mit `ey…`).
+4. In die `.env` eintragen:
+   ```ini
+   TUNNEL_TOKEN=ey...
+   ```
+5. Im Dashboard unter **Public Hostnames** zwei Einträge anlegen:
+
+   | Subdomain | Domain | Service |
+   |---|---|---|
+   | `ffsms` | `networkx.cc` | `HTTP` → `api:3000` |
+   | `ntfy` | `networkx.cc` | `HTTP` → `ntfy:80` |
+
+   `api` und `ntfy` sind die Container-Namen — der Tunnel läuft im selben
+   Docker-Netz und erreicht sie darüber direkt. **Nicht** `localhost`
+   eintragen: aus Sicht des cloudflared-Containers wäre das er selbst.
+
+---
+
+## Schritt 6 — Starten
+
+```bash
+docker compose --profile tunnel up -d --build
+```
+
+Der erste Start dauert ein paar Minuten (Images ziehen, Backend bauen).
+Status prüfen:
+
+```bash
+docker compose ps
+docker compose logs -f api
+```
+
+Erwartet: `FF-SMS-Backend laeuft auf Port 3000` und
+`Wochenreport geplant: "0 20 * * 0" (Europe/Vienna)`.
+
+### ntfy-Benutzer und Token anlegen
+
+Die Instanz läuft mit `deny-all` — ohne Zugangsdaten kommt niemand an die
+Meldungen. Jetzt einen Benutzer anlegen:
+
+```bash
+docker compose exec ntfy ntfy user add ff
+# Passwort: der NTFY_PASS-Wert aus Schritt 3
+
+docker compose exec ntfy ntfy access ff ff-sms rw
+```
+
+Token für das Backend erzeugen:
+
+```bash
+docker compose exec ntfy ntfy token add ff
+```
+
+Ausgegeben wird ein Token, das mit `tk_` beginnt. In die `.env`:
+
+```ini
+NTFY_TOKEN=tk_...
+```
+
+Und das Backend neu starten, damit es den Token liest:
+
+```bash
+docker compose up -d api
+```
+
+---
+
+## Schritt 7 — Prüfen
+
+**Backend von außen:**
+
+```bash
+curl -s https://ffsms.networkx.cc/api/v1/health/live
+# {"status":"ok"}
+
+curl -s -H "X-API-Key: <API_KEY>" https://ffsms.networkx.cc/api/v1/health
+# {"status":"ok","database":"up",...}
+```
+
+Kommt bei der zweiten Zeile `401`, stimmt der Schlüssel nicht mit `API_KEYS`
+überein.
+
+**ntfy:**
+
+```bash
+curl -H "Authorization: Bearer <NTFY_TOKEN>" \
+     -H "Title: Test" -d "Funktioniert" \
+     https://ntfy.networkx.cc/ff-sms
+```
+
+**Auf dem Handy:** die [ntfy-App](https://f-droid.org/packages/io.heckel.ntfy/)
+installieren, unter *Einstellungen → Benutzerkonten* den Server
+`https://ntfy.networkx.cc` mit Benutzer `ff` und dem Passwort hinterlegen,
+dann das Topic `ff-sms` abonnieren. Der Test von oben muss ankommen.
+
+---
+
+## Schritt 8 — App verbinden
+
+In der App unter **Einstellungen**:
+
+| Feld | Wert |
+|---|---|
+| Backend-URL | `https://ffsms.networkx.cc/` |
+| API-Key | der `API_KEY` aus Schritt 3 |
+| Geräte-Kennung | `ff-kuehwiesen-sms` (muss zum `API_KEYS`-Eintrag passen) |
+
+**Verbindung testen** antippen. Kommt „Verbindung in Ordnung", passt alles.
+Danach **Verbrauchszahlen übertragen** einschalten.
+
+---
+
+## Betrieb
+
+```bash
+# Logs
+docker compose logs -f api
+
+# Neustart nach .env-Änderung
+docker compose up -d
+
+# Auf neuen Stand bringen
+git pull && docker compose --profile tunnel up -d --build
+
+# Datenbank sichern (regelmäßig! z. B. per cron)
+docker compose exec -T db pg_dump -U ffsms ffsms | gzip > ~/ffsms-$(date +%F).sql.gz
+```
+
+Wochenreport von Hand auslösen, ohne bis Sonntag zu warten — dazu die
+Alarmschwelle kurz herunterdrehen und eine Test-Kampagne einliefern, oder
+schlicht warten und die Logs beobachten.
+
+---
+
+## Fehlersuche
+
+| Symptom | Ursache |
+|---|---|
+| `curl` von außen antwortet nicht | Tunnel läuft nicht: `docker compose logs cloudflared` |
+| `502` von Cloudflare | Public Hostname zeigt auf `localhost` statt auf `api` bzw. `ntfy` |
+| `api` startet nicht, Log nennt `API_KEYS` | `.env` fehlt oder der Eintrag hat nicht das Format `kennung:schluessel` |
+| Meldung kommt nicht am Handy an | Token fehlt in `.env`, oder der Benutzer hat keine Rechte auf dem Topic (`ntfy access ff ff-sms rw`) |
+| `403` beim Upload aus der App | Geräte-Kennung in der App weicht von der in `API_KEYS` ab |
+| ntfy-Links im Handy zeigen ins Leere | `NTFY_BASE_URL` stimmt nicht mit dem Hostnamen im Tunnel überein |
