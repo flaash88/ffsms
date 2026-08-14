@@ -821,7 +821,8 @@ wenn der Server steht.
 
 ```bash
 cd android  && ./gradlew testDebugUnitTest    # 38 Tests
-cd backend  && npm test                       # 47 Tests
+cd backend  && npm test                       # 53 Tests
+python3 tools/check-kotlin-refs.py            # fehlende Importe
 ```
 
 **Android (38).** Die Segmentberechnung ist bewusst frei von
@@ -833,11 +834,19 @@ denen Greedy-Packung und einfache Division auseinanderlaufen — ein
 weist die Anzeige ein Segment zu wenig aus. Weiter: Textbereinigung und
 CSV-Export inklusive Quoting und Summenzeile.
 
-**Backend (47).** Alarmbedingungen, Reportformat, Schlüsselkonfiguration,
+**Backend (53).** Alarmbedingungen, Reportformat, Schlüsselkonfiguration,
 Zeitzonengrenzen (Sommer-/Winterzeit, Jahreswechsel, 23:30 am Monatsletzten)
-und ein HTTP-Integrationstest über die volle Nest-Pipeline, der
+und zwei HTTP-Integrationstests über die volle Nest-Pipeline: einer weist
 Authentifizierung, Idempotenz und die Abweisung von Text-, Nummern- und
-Hash-Feldern nachweist.
+Hash-Feldern nach, der andere die Download-Seite — samt des Falls, dass ein
+leeres `DOWNLOAD_PASSWORD` sie abschaltet statt sie offen stehen zu lassen.
+
+**`tools/check-kotlin-refs.py`** sucht Bezeichner, die verwendet, aber weder
+importiert noch im selben Paket deklariert sind. Kein Ersatz für den Compiler
+— aber ein CI-Durchlauf dauert acht Minuten, und ein Release ist hier schon
+einmal an einem einzigen versehentlich entfernten Import gescheitert. Wer
+keine Android-SDK zur Hand hat, sieht das sonst erst nach diesen acht
+Minuten.
 
 ---
 
