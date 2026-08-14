@@ -12,6 +12,8 @@ import {
   previousMonthRange,
 } from '../common/time';
 
+const DEFAULT_CRON = '0 20 * * 0';
+
 /**
  * Wochenreport, standardmaessig sonntags 20:00 Europe/Vienna.
  *
@@ -33,22 +35,50 @@ export class ReportsService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    const cronExpression = this.config.get<string>('weeklyReportCron') ?? '0 20 * * 0';
+    const configured = this.config.get<string>('weeklyReportCron') ?? DEFAULT_CRON;
     const timezone = this.config.get<string>('timezone') ?? 'Europe/Vienna';
 
-    const job = new CronJob(
-      cronExpression,
-      () => {
-        void this.sendWeeklyReport();
-      },
-      null,
-      false,
-      timezone,
-    );
+    const job = this.buildJob(configured, timezone) ?? this.buildJob(DEFAULT_CRON, timezone);
+    if (!job) return;
 
     this.scheduler.addCronJob('weekly-report', job);
     job.start();
-    this.logger.log(`Wochenreport geplant: "${cronExpression}" (${timezone})`);
+  }
+
+  /**
+   * Baut den Cron-Job, oder gibt null zurueck, wenn der Ausdruck kaputt ist.
+   *
+   * Ein ungueltiger Ausdruck darf das Backend NICHT umbringen. Sonst nimmt ein
+   * Tippfehler in der .env - ein Zeichen zu viel, eine vergessene Klammer -
+   * dem Backend den Start, und mit ihm faellt das Hochladen der Aussendungen
+   * aus. Ein fehlender Wochenreport ist ein Aergernis; fehlende
+   * Verbrauchszahlen sind der Zustand, in dem der 2100er-Vorfall unbemerkt
+   * geblieben ist. Der Report ist die unwichtigere Haelfte und weicht daher
+   * auf den Standard zurueck.
+   */
+  private buildJob(expression: string, timezone: string): CronJob | null {
+    try {
+      const job = new CronJob(
+        expression,
+        () => {
+          void this.sendWeeklyReport();
+        },
+        null,
+        false,
+        timezone,
+      );
+      this.logger.log(`Wochenreport geplant: "${expression}" (${timezone})`);
+      return job;
+    } catch (error) {
+      this.logger.error(
+        `WEEKLY_REPORT_CRON ist ungueltig: "${expression}" - ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+      );
+      if (expression !== DEFAULT_CRON) {
+        this.logger.warn(`Weiche auf den Standard aus: "${DEFAULT_CRON}"`);
+      }
+      return null;
+    }
   }
 
   /** Oeffentlich, damit sich der Report auch von Hand ausloesen laesst. */
