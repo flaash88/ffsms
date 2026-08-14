@@ -352,9 +352,25 @@ cd ~/ffsms && git fetch origin \
 docker compose exec -T db pg_dump -U ffsms ffsms | gzip > ~/ffsms-$(date +%F).sql.gz
 ```
 
-Wochenreport von Hand auslösen, ohne bis Sonntag zu warten — dazu die
-Alarmschwelle kurz herunterdrehen und eine Test-Kampagne einliefern, oder
-schlicht warten und die Logs beobachten.
+### Wochenreport von Hand auslösen
+
+Ohne bis Sonntag 20:00 warten zu müssen:
+
+```bash
+cd ~/ffsms/backend
+set -a; . ./.env; set +a
+curl -s -X POST -H "X-API-Key: ${API_KEYS#*:}" \
+  https://ffsms.networkx.cc/api/v1/reports/weekly
+```
+
+Antwort `{"sent":true}`, die Meldung ist Sekunden später am Handy.
+
+Der Report zeigt immer die **laufende** Kalenderwoche, nicht die vergangene.
+Von Hand ausgelöst bekommst du also den Stand von jetzt — inklusive der
+Aussendungen von heute.
+
+Dasselbe hilft auch, wenn der Server am Sonntag abend aus war: der Report
+lässt sich einfach nachholen, solange die Woche noch läuft.
 
 ---
 

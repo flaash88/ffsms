@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CampaignsModule } from '../campaigns/campaigns.module';
 import { NotifyModule } from '../notify/notify.module';
+import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
 @Module({
   imports: [CampaignsModule, NotifyModule],
+  controllers: [ReportsController],
   providers: [ReportsService],
 })
 export class ReportsModule {}

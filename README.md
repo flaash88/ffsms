@@ -549,6 +549,25 @@ Ohne `from`/`to` wird der laufende Kalendermonat in `TZ_REPORT` genommen.
 }
 ```
 
+### `POST /api/v1/reports/weekly`
+
+Schickt den Wochenreport sofort per ntfy, ohne auf den Sonntag zu warten.
+Kein Body, Antwort `{"sent":true}`.
+
+```bash
+curl -s -X POST -H "X-API-Key: DEIN_KEY" \
+  https://ffsms.networkx.cc/api/v1/reports/weekly
+```
+
+Gedacht zum Ausprobieren und zum Nachholen, wenn der Server sonntags abend
+aus war. Der Report bezieht sich auf die **laufende** Kalenderwoche — von
+Hand ausgelöst zeigt er also den Stand von jetzt.
+
+Die Alternative wäre, `WEEKLY_REPORT_CRON` kurz umzustellen und den Dienst
+zweimal neu zu starten. Das birgt jedes Mal die Gefahr, die Umstellung
+hinterher zu vergessen und dann jede Minute eine Push-Meldung zu bekommen —
+was die Meldungen genau dann abstumpfen lässt, wenn sie zählen.
+
 ### `GET /api/v1/health`
 
 Erreichbarkeit **und** Gültigkeit des Schlüssels. Der Endpunkt liegt bewusst
