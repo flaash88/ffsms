@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FF-SMS-Tool</string>
+
+    <!-- Navigation -->
+    <string name="nav_compose">Verfassen</string>
+    <string name="nav_groups">Verteiler</string>
+    <string name="nav_history">Verlauf</string>
+    <string name="nav_settings">Einstellungen</string>
+    <string name="nav_privacy">Datenschutz</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_rename">Umbenennen</string>
+    <string name="action_add">Hinzufügen</string>
+
+    <!-- Verteiler -->
+    <string name="groups_title">Verteiler</string>
+    <string name="groups_empty">Noch kein Verteiler angelegt.\n\nLege eine Gruppe an und füge Empfänger hinzu — aus den Kontakten oder von Hand.</string>
+    <string name="groups_new">Neue Gruppe</string>
+    <string name="groups_new_hint">Name der Gruppe, z. B. „Aktivmannschaft"</string>
+    <string name="groups_recipient_count">%1$d Empfänger</string>
+    <string name="groups_invalid_count">, davon %1$d ungültig</string>
+    <string name="groups_delete_title">Gruppe löschen?</string>
+    <string name="groups_delete_text">„%1$s" und alle %2$d Empfänger werden gelöscht. Der Verlauf bereits versendeter Aussendungen bleibt erhalten.</string>
+
+    <string name="group_detail_add_contacts">Aus Kontakten</string>
+    <string name="group_detail_add_manual">Nummer eingeben</string>
+    <string name="group_detail_manual_title">Nummer hinzufügen</string>
+    <string name="group_detail_manual_number">Telefonnummer</string>
+    <string name="group_detail_manual_name">Name (optional)</string>
+    <string name="group_detail_manual_hint">Mehrere Nummern können mit Komma oder Zeilenumbruch getrennt eingegeben werden.</string>
+    <string name="group_detail_empty">Noch keine Empfänger in dieser Gruppe.</string>
+    <string name="group_detail_invalid_badge">ungültig</string>
+    <string name="group_detail_invalid_hint">Ungültige Nummern werden beim Versand übersprungen.</string>
+
+    <string name="import_result">%1$d hinzugefügt</string>
+    <string name="import_result_duplicates">, %1$d Duplikate übersprungen</string>
+    <string name="import_result_invalid">, %1$d ungültig</string>
+    <string name="import_no_contacts_permission">Ohne Kontaktzugriff kannst du Nummern weiterhin von Hand eingeben.</string>
+
+    <!-- Verfassen -->
+    <string name="compose_title">Verfassen</string>
+    <string name="compose_group_label">Verteiler</string>
+    <string name="compose_group_none">Keinen Verteiler ausgewählt</string>
+    <string name="compose_message_label">Nachricht</string>
+    <string name="compose_message_hint">Text der SMS</string>
+
+    <string name="compose_encoding_gsm7">Encoding: GSM-7</string>
+    <string name="compose_encoding_ucs2">Encoding: UCS-2</string>
+    <string name="compose_encoding_warning">Sonderzeichen erkannt</string>
+    <string name="compose_chars_segments">%1$d Zeichen → %2$d Segmente</string>
+    <string name="compose_times_recipients">× %1$d Empfänger = %2$d SMS</string>
+    <string name="compose_total_label">SMS gesamt</string>
+    <string name="compose_remaining">Noch %1$d Zeichen bis zum nächsten Segment</string>
+
+    <string name="compose_ucs2_explain">Diese Zeichen verhindern GSM-7 und mehr als halbieren die Segmentgröße (70 statt 160 Zeichen):</string>
+    <string name="compose_ucs2_char">%1$s (%2$d×)</string>
+    <string name="compose_clean">Text bereinigen</string>
+    <string name="compose_cleaned_replaced">%1$d Zeichen ersetzt</string>
+    <string name="compose_cleaned_removed">, %1$d entfernt</string>
+    <string name="compose_cleaned_nothing">Nichts zu bereinigen — der Text ist bereits GSM-7.</string>
+    <string name="compose_saving">Spart %1$d SMS gegenüber dem aktuellen Text.</string>
+
+    <string name="compose_send">Senden</string>
+    <string name="compose_over_threshold">Über dem Warnschwellwert von %1$d SMS</string>
+    <string name="compose_over_limit">Über der Obergrenze von %1$d Segmenten je Aussendung. Der Versand würde abgebrochen.</string>
+    <string name="compose_no_recipients">Der gewählte Verteiler hat keine gültigen Empfänger.</string>
+    <string name="compose_empty_text">Bitte zuerst einen Text eingeben.</string>
+
+    <!-- Bestaetigungsdialog -->
+    <string name="confirm_title">Aussendung bestätigen</string>
+    <string name="confirm_body">Es werden %1$d SMS verrechnet.\n\n%2$d Empfänger × %3$d Segmente je Nachricht (%4$s).\n\nVerteiler: %5$s</string>
+    <string name="confirm_body_ucs2_hint">\n\nAchtung: Durch Sonderzeichen wird UCS-2 verwendet. Mit „Text bereinigen" ließen sich %1$d SMS sparen.</string>
+    <string name="confirm_checkbox">Ich habe die Zahl %1$d geprüft</string>
+    <string name="confirm_send">%1$d SMS jetzt senden</string>
+    <string name="confirm_queued">Aussendung eingereiht.</string>
+
+    <!-- Verlauf -->
+    <string name="history_title">Verlauf &amp; Verbrauch</string>
+    <string name="history_usage_week">Diese Woche</string>
+    <string name="history_usage_month">Dieser Monat</string>
+    <string name="history_usage_unit">Segmente</string>
+    <string name="history_usage_hint">Aus dem lokalen Sendeprotokoll — unabhängig vom Backend.</string>
+    <string name="history_empty">Noch keine Aussendungen.</string>
+    <string name="history_export">CSV exportieren</string>
+    <string name="history_export_done">Verlauf exportiert.</string>
+    <string name="history_export_failed">Export fehlgeschlagen.</string>
+    <string name="history_row_summary">%1$d Empfänger · %2$d Segmente · %3$s</string>
+    <string name="history_unsynced">%1$d noch nicht übertragen</string>
+
+    <string name="campaign_status_queued">eingereiht</string>
+    <string name="campaign_status_running">läuft</string>
+    <string name="campaign_status_completed">abgeschlossen</string>
+    <string name="campaign_status_aborted">abgebrochen</string>
+
+    <string name="detail_title">Aussendung</string>
+    <string name="detail_aborted">Abgebrochen: %1$s</string>
+    <string name="detail_recipients">Empfänger</string>
+    <string name="detail_message">Nachricht</string>
+    <string name="detail_retry">Erneut senden</string>
+    <string name="detail_retry_started">Neuversuch für %1$s gestartet.</string>
+    <string name="detail_total">%1$d Empfänger · %2$d Segmente gesamt</string>
+
+    <string name="send_status_pending">wartet</string>
+    <string name="send_status_sending">wird gesendet</string>
+    <string name="send_status_sent">gesendet</string>
+    <string name="send_status_delivered">zugestellt</string>
+    <string name="send_status_failed">fehlgeschlagen</string>
+    <string name="send_attempt">Versuch %1$d</string>
+
+    <!-- Einstellungen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_backend">Backend</string>
+    <string name="settings_backend_url">Backend-URL</string>
+    <string name="settings_api_key">API-Key</string>
+    <string name="settings_device_id">Geräte-Kennung</string>
+    <string name="settings_sync_enabled">Verbrauchszahlen übertragen</string>
+    <string name="settings_sync_enabled_desc">Überträgt ausschließlich Zahlen. Details unter „Datenschutz".</string>
+    <string name="settings_test">Verbindung testen</string>
+    <string name="settings_test_running">Teste…</string>
+    <string name="settings_test_ok">Verbindung in Ordnung (%1$s).</string>
+    <string name="settings_test_failed">Fehlgeschlagen: %1$s</string>
+    <string name="settings_test_incomplete">Bitte zuerst URL und API-Key eintragen.</string>
+
+    <string name="settings_limits">Grenzwerte</string>
+    <string name="settings_warn_threshold">Warnschwelle (SMS je Aussendung)</string>
+    <string name="settings_warn_threshold_desc">Ab dieser Zahl wird die Anzeige rot. Blockiert nichts.</string>
+    <string name="settings_max_campaign">Obergrenze je Aussendung (Segmente)</string>
+    <string name="settings_max_campaign_desc">Harte Grenze. Wird sie überschritten, bricht der Versand ab.</string>
+    <string name="settings_max_day">Obergrenze pro Tag (Segmente)</string>
+    <string name="settings_max_day_desc">Harte Grenze über alle Aussendungen eines Kalendertages.</string>
+    <string name="settings_today_used">Heute verbraucht: %1$d von %2$d Segmenten</string>
+    <string name="settings_saved">Gespeichert.</string>
+    <string name="settings_number_invalid">Bitte eine Zahl größer als 0 eingeben.</string>
+
+    <string name="settings_permissions">Berechtigungen</string>
+    <string name="settings_perm_sms">SMS senden</string>
+    <string name="settings_perm_contacts">Kontakte lesen</string>
+    <string name="settings_perm_notifications">Benachrichtigungen</string>
+    <string name="settings_perm_granted">erteilt</string>
+    <string name="settings_perm_missing">fehlt</string>
+    <string name="settings_perm_request">Anfordern</string>
+
+    <!-- Berechtigungen -->
+    <string name="perm_sms_title">Berechtigung zum SMS-Versand</string>
+    <string name="perm_sms_text">Die App versendet die Alarm-SMS direkt über die SIM-Karte dieses Geräts. Ohne diese Berechtigung kann nichts gesendet werden.\n\nEs werden keine SMS gelesen und keine empfangenen Nachrichten ausgewertet.</string>
+    <string name="perm_contacts_title">Zugriff auf Kontakte</string>
+    <string name="perm_contacts_text">Nur damit du Empfänger bequem aus dem Adressbuch auswählen kannst. Die Kontakte bleiben auf dem Gerät.\n\nDu kannst die Berechtigung ablehnen und Nummern von Hand eingeben — die App bleibt voll nutzbar.</string>
+    <string name="perm_notifications_title">Benachrichtigungen</string>
+    <string name="perm_notifications_text">Zeigt den laufenden Versand an und meldet Abbrüche und Fehler. Ohne diese Berechtigung läuft der Versand unsichtbar im Hintergrund.</string>
+    <string name="perm_continue">Weiter</string>
+    <string name="perm_deny">Nicht jetzt</string>
+
+    <!-- Datenschutz -->
+    <string name="privacy_title">Datenschutz</string>
+    <string name="privacy_intro">Diese App überträgt Verbrauchszahlen an ein selbst betriebenes Backend, damit die SMS-Kosten nachvollziehbar bleiben. Der Zweck ist Kostenkontrolle, nicht die Kontrolle von Personen.\n\nDie Übertragung ist standardmäßig ausgeschaltet und muss in den Einstellungen aktiv eingeschaltet werden.</string>
+
+    <string name="privacy_sent_header">Diese Daten werden übertragen</string>
+    <string name="privacy_sent_device">Geräte-Kennung — der frei gewählte Name dieses Geräts, z. B. „ff-kuehwiesen-sms". Kein Gerätebezeichner des Herstellers, keine IMEI, keine Telefonnummer des Geräts.</string>
+    <string name="privacy_sent_campaign">Kennung der Aussendung — eine Zufalls-UUID. Sie dient nur dazu, dieselbe Aussendung nicht doppelt zu zählen.</string>
+    <string name="privacy_sent_time">Zeitpunkt der Aussendung — Datum und Uhrzeit mit Zeitzone.</string>
+    <string name="privacy_sent_recipients">Anzahl der Empfänger — eine Zahl, z. B. 15. Nicht, wer die Empfänger sind.</string>
+    <string name="privacy_sent_segments">Segmente je Nachricht und Segmente gesamt — Zahlen, z. B. 3 und 45.</string>
+    <string name="privacy_sent_encoding">Encoding — entweder „GSM7" oder „UCS2".</string>
+    <string name="privacy_sent_failed">Anzahl fehlgeschlagener Empfänger — eine Zahl.</string>
+    <string name="privacy_sent_aborted">Abbruchgrund — falls die Aussendung an einer Obergrenze gestoppt wurde, z. B. „limit_daily".</string>
+
+    <string name="privacy_never_header">Diese Daten werden niemals übertragen</string>
+    <string name="privacy_never_text">Der Nachrichtentext.\nTelefonnummern der Empfänger.\nNamen oder andere Kontaktdaten.\nAusschnitte, Anfänge oder Schlagworte aus dem Text.\nPrüfsummen oder Hashes des Textes.\nStandortdaten.\nKontaktlisten oder Gruppennamen.\n\nDiese Felder gibt es im Datenmodell der Übertragung nicht — auch nicht optional oder abgeschaltet. Das Backend weist Datensätze mit unbekannten Feldern zurück.</string>
+
+    <string name="privacy_local_header">Was auf dem Gerät bleibt</string>
+    <string name="privacy_local_text">Verteilerlisten, Telefonnummern, Kontaktnamen und die Texte der versendeten Nachrichten liegen ausschließlich in der lokalen Datenbank dieser App. Sie werden beim Deinstallieren der App gelöscht.</string>
+
+    <string name="privacy_third_header">Dritte</string>
+    <string name="privacy_third_text">Die App enthält keine Analytics, kein Crash-Reporting, keine Werbe-SDKs und kein Firebase. Sie spricht ausschließlich mit dem Backend, dessen Adresse in den Einstellungen eingetragen ist.</string>
+
+    <string name="privacy_consent_header">Einwilligung</string>
+    <string name="privacy_consent_text">Der Betreiber dieses Geräts hat der Übertragung der oben genannten Zahlen zugestimmt. Die Übertragung lässt sich jederzeit in den Einstellungen abschalten; der SMS-Versand funktioniert davon unabhängig weiter.</string>
+
+    <!-- Benachrichtigungen -->
+    <string name="notif_channel_sending">Versand</string>
+    <string name="notif_channel_sending_desc">Zeigt den laufenden SMS-Versand an.</string>
+    <string name="notif_channel_result">Ergebnisse und Abbrüche</string>
+    <string name="notif_channel_result_desc">Meldet abgeschlossene Aussendungen, Fehler und Abbrüche.</string>
+    <string name="notif_sending_title">SMS werden versendet</string>
+    <string name="notif_sending_text">Aussendung läuft — App nicht schließen.</string>
+    <string name="notif_done_title">Aussendung abgeschlossen</string>
+    <string name="notif_done_dispatched">%1$d Empfänger bedient</string>
+    <string name="notif_done_skipped">, %1$d übersprungen</string>
+    <string name="notif_done_failed">, %1$d fehlgeschlagen</string>
+    <string name="notif_aborted_title">Aussendung abgebrochen</string>
+    <string name="notif_aborted_text">%1$s. Bis dahin bedient: %2$d Empfänger.</string>
+</resources>

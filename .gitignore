@@ -1,0 +1,27 @@
+# --- Android / Gradle ---
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore
+.cxx/
+captures/
+*.apk
+*.aab
+
+# --- Node / NestJS ---
+backend/node_modules/
+backend/dist/
+backend/coverage/
+backend/.env
+npm-debug.log*
+yarn-error.log*
+
+# --- IDE / OS ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
