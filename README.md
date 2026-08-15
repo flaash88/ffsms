@@ -24,6 +24,7 @@ und wie sieht man es sofort, wenn es doch passiert?**
 - [Warum diese Bauweise](#warum-diese-bauweise)
 - [Schutz gegen Mehrfachversand](#schutz-gegen-mehrfachversand)
 - [Datenschutz](#datenschutz)
+- [Erscheinungsbild](#erscheinungsbild)
 - [Android-App bauen](#android-app-bauen)
 - [Release-APK signieren](#release-apk-signieren)
 - [APK herunterladen](#apk-herunterladen)
@@ -122,17 +123,19 @@ Der Bestätigungsdialog nennt die Gesamtzahl dreimal — im Fließtext, in einer
 Pflicht-Checkbox und auf dem Bestätigungsknopf:
 
 ```
-Es werden 60 SMS verrechnet.
+▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨▨
+Aussendung bestätigen
 
-15 Empfänger × 4 Segmente je Nachricht (UCS2).
+  60  SMS WERDEN VERRECHNET
 
+15 Empfänger × 4 Segmente je Nachricht (UCS2)
 Verteiler: Aktivmannschaft
 
-Achtung: Durch Sonderzeichen wird UCS-2 verwendet.
+Durch Sonderzeichen wird UCS-2 verwendet.
 Mit „Text bereinigen" ließen sich 30 SMS sparen.
 
 [ ] Ich habe die Zahl 60 geprüft
-                              [ Abbrechen ] [ 60 SMS jetzt senden ]
+                    [ Abbrechen ] [ 60 SMS jetzt senden ]
 ```
 
 Der Knopf ist erst aktiv, wenn die Checkbox gesetzt ist. Ein reines „OK" gibt
@@ -185,6 +188,73 @@ Werbe-SDKs. Der Screen **Einstellungen → Datenschutz** listet all das in der
 App selbst auf.
 
 ---
+
+## Erscheinungsbild
+
+Corporate Design der Feuerwehr, mit einer Regel, die alles andere bestimmt:
+**Rot gehört den Zahlen, nicht der Zierde.**
+
+Wären Kopfzeile, Navigation und jeder Knopf rot, dann wäre die Warnung
+„60 SMS" nur eine weitere rote Fläche unter vielen — und Rot verlöre seine
+Bedeutung genau dort, wo diese App sie braucht. Die Flächen sind deshalb
+**Rauchanthrazit**, die Farbe der Einsatzkleidung. Florianrot erscheint als
+Signatur: ein 3-px-Streifen unter der Kopfzeile, der Senden-Knopf, die
+Kostenzahl im Warnfall.
+
+| Farbe | Hex | Wofür |
+|---|---|---|
+| Florianrot | `#B3120C` | Streifen, Senden-Knopf, Kostenzahl über der Obergrenze |
+| Rauchanthrazit | `#221F1E` | Kopfzeile, App-Symbol, Startbildschirm |
+| Löschweiß | `#F7F4F2` | Hintergrund |
+| Warnbernstein | `#A8620A` | Über der Warnschwelle, UCS-2, ungültige Nummer |
+| Einsatzgrün | `#2C6B48` | Zugestellt, Verbindung in Ordnung |
+| Rauch | `#6D625E` | Sekundärtext |
+
+**Warum Bernstein und nicht ein zweites Rot:** Ein Warnzustand („über der
+Schwelle") und ein Sperrzustand („über der Obergrenze, Versand bricht ab")
+müssen auf einen Blick unterscheidbar sein. Zwei Rottöne nebeneinander
+schaffen das nicht, schon gar nicht bei Sonnenlicht auf einem Handydisplay.
+
+**Kein Dynamic Color.** Material You würde die Farben aus dem Hintergrundbild
+des Geräts ableiten — die Warnfarbe hinge dann davon ab, welches Foto jemand
+eingestellt hat. Diese Farben tragen Bedeutung und werden festgelegt, nicht
+errechnet.
+
+### Bausteine
+
+Vier Elemente, die auf jedem Bildschirm gleich funktionieren
+(`ui/components/FfComponents.kt`):
+
+| Baustein | Regel |
+|---|---|
+| `FfTopBar` | Anthrazit, weiße Schrift, 3 px Florianrot als Unterkante. Auf jedem Bildschirm identisch. |
+| `CostTile` | 40 px, feste Laufweite. Neutral bis zur Warnschwelle, dann Bernstein, über der Obergrenze Rot **mit Grund und Rahmen** — der Zustand steckt in der Fläche, nicht nur in der Farbe. |
+| `StatusPill` | Immer ein Wort, nie ein Symbol allein. Symbole sind am Handy im Rüsthaus zu klein. |
+| `HazardStripe` | Diagonale Schraffur, nur im Bestätigungsdialog und bei einer abgebrochenen Aussendung. Sonst nirgends. |
+
+Dass die Kostenkachel im Warnfall **Grund und Rahmen** wechselt und nicht nur
+den Farbton, ist kein Zierrat: rund acht Prozent der Männer haben eine
+Rotsehschwäche. Ein Zustand, der nur an der Farbe hängt, ist für diese Leute
+gar kein Zustand.
+
+### Schrift
+
+Zahlen laufen in fester Laufweite (`FontFamily.Monospace`), Text in der
+Systemschrift. In der Verbrauchsliste stehen Segmentzahlen untereinander; mit
+proportionalen Ziffern rutschen sie gegeneinander, und ein Sprung von 45 auf
+450 fällt beim Überfliegen nicht auf. In fester Laufweite bilden die Spalten
+eine Kante — eine Zahl, die aus der Reihe tanzt, sieht man, ohne sie zu lesen.
+
+Eine echte Schmalschrift (Roboto Condensed) müsste als Datei ins APK. Das ist
+bewusst **nicht** gemacht; Überschriften tragen stattdessen engere Laufweite
+und höheres Gewicht.
+
+### App-Symbol
+
+Florianstern in Florianrot auf anthrazitem Grund, in der Mitte eine
+Sprechblase. Am Startbildschirm eines Feuerwehrhandys liegen mehrere rote
+Symbole nebeneinander — ein weiteres rotes Quadrat wäre dort nicht
+wiederzufinden.
 
 ## Android-App bauen
 

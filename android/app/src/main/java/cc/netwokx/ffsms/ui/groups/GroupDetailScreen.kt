@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Dialpad
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -39,7 +38,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
+import cc.netwokx.ffsms.ui.components.FfTopBar
+import cc.netwokx.ffsms.ui.components.NumberText
+import cc.netwokx.ffsms.ui.components.StatusPill
+import cc.netwokx.ffsms.ui.components.Tone
+import cc.netwokx.ffsms.ui.theme.ff
 import cc.netwokx.ffsms.data.contacts.DeviceContact
 import cc.netwokx.ffsms.data.contacts.DeviceContactGroup
 import cc.netwokx.ffsms.ui.permissions.PermissionRequest
@@ -133,17 +136,7 @@ fun GroupDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(state.groupName) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back),
-                        )
-                    }
-                },
-            )
+            FfTopBar(title = state.groupName, onBack = onBack)
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
@@ -233,22 +226,23 @@ fun GroupDetailScreen(
                                         recipient.displayName ?: recipient.msisdn,
                                         style = MaterialTheme.typography.bodyLarge,
                                     )
-                                    Text(
-                                        recipient.msisdn,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    NumberText(text = recipient.msisdn)
                                 }
+                                // Beide bernsteinfarben, nicht rot: eine
+                                // ungueltige Nummer wird uebersprungen, und
+                                // entfernt wird ohnehin niemand automatisch.
+                                // Bei einem Alarmierungsverteiler waere das
+                                // die gefaehrlichere Richtung.
                                 if (!recipient.valid) {
-                                    AssistChip(
-                                        onClick = {},
-                                        label = { Text(stringResource(R.string.group_detail_invalid_badge)) },
+                                    StatusPill(
+                                        text = stringResource(R.string.group_detail_invalid_badge),
+                                        tone = Tone.WARN,
                                     )
                                 }
                                 if (recipient.missingInContactGroup) {
-                                    AssistChip(
-                                        onClick = {},
-                                        label = { Text(stringResource(R.string.contactgroup_missing_badge)) },
+                                    StatusPill(
+                                        text = stringResource(R.string.contactgroup_missing_badge),
+                                        tone = Tone.WARN,
                                     )
                                 }
                                 IconButton(onClick = { vm.deleteRecipient(recipient.id) }) {
@@ -451,9 +445,9 @@ private fun ContactGroupCard(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (missingCount > 0) {
-                MaterialTheme.colorScheme.errorContainer
+                MaterialTheme.ff.warnContainer
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.surface
             },
         ),
     ) {

@@ -26,7 +26,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +44,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.BuildConfig
 import cc.netwokx.ffsms.R
+import cc.netwokx.ffsms.ui.components.CostLevel
+import cc.netwokx.ffsms.ui.components.CostTile
+import cc.netwokx.ffsms.ui.components.FfTopBar
+import cc.netwokx.ffsms.ui.components.SectionLabel
+import cc.netwokx.ffsms.ui.components.StatusPill
+import cc.netwokx.ffsms.ui.components.Tone
 import cc.netwokx.ffsms.ui.permissions.PermissionRequest
 import cc.netwokx.ffsms.ui.permissions.openAppSettings
 import cc.netwokx.ffsms.ui.permissions.rememberPermissionGate
@@ -105,7 +110,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) },
+        topBar = { FfTopBar(stringResource(R.string.settings_title)) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         if (settings == null) return@Scaffold
@@ -148,14 +153,20 @@ fun SettingsScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.settings_limits))
 
-            Text(
-                stringResource(
-                    R.string.settings_today_used,
-                    state.segmentsToday,
-                    settings.maxSegmentsPerDay,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
+            // Dieselbe Kachel wie beim Verfassen, nur kleiner. Damit steht
+            // die wichtigste Zahl der App an zwei Stellen in derselben Form -
+            // und ein verstellter Grenzwert faellt auf, weil die Beschriftung
+            // daneben mitwandert.
+            CostTile(
+                value = state.segmentsToday,
+                label = stringResource(R.string.settings_today_label, settings.maxSegmentsPerDay),
+                level = if (state.segmentsToday >= settings.maxSegmentsPerDay) {
+                    CostLevel.CRITICAL
+                } else if (state.segmentsToday * 2 >= settings.maxSegmentsPerDay) {
+                    CostLevel.WARN
+                } else {
+                    CostLevel.NEUTRAL
+                },
             )
 
             NumberField(
@@ -252,7 +263,7 @@ fun SettingsScreen(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    SectionLabel(text)
 }
 
 /**

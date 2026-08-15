@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FfSms" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+      Der Startbildschirm traegt Rauchanthrazit, wie die Kopfzeile der App.
+      Ohne das blitzt beim Start eine weisse Flaeche auf und die App wirkt,
+      als waere sie abgestuerzt und neu gestartet.
+    -->
+    <style name="Theme.FfSms" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:statusBarColor">@color/splash_background</item>
+        <item name="android:navigationBarColor">@color/splash_background</item>
+    </style>
 </resources>

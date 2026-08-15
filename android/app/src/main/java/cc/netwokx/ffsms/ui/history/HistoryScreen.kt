@@ -8,7 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,7 +30,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +45,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.data.db.CampaignEntity
 import cc.netwokx.ffsms.data.db.CampaignStatus
+import cc.netwokx.ffsms.ui.components.FfTopBar
+import cc.netwokx.ffsms.ui.components.NumberText
+import cc.netwokx.ffsms.ui.components.StatTile
+import cc.netwokx.ffsms.ui.components.StatusPill
+import cc.netwokx.ffsms.ui.components.Tone
+import cc.netwokx.ffsms.ui.theme.ff
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -73,8 +83,8 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.history_title)) },
+            FfTopBar(
+                title = stringResource(R.string.history_title),
                 actions = {
                     IconButton(onClick = { exportLauncher.launch(vm.suggestedFileName()) }) {
                         Icon(
@@ -122,81 +132,105 @@ fun HistoryScreen(
  */
 @Composable
 private fun UsageCard(week: Int, month: Int, unsynced: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    Column(
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                UsageValue(stringResource(R.string.history_usage_week), week)
-                UsageValue(stringResource(R.string.history_usage_month), month)
-            }
-            Text(
-                text = stringResource(R.string.history_usage_hint),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp),
+        // Summe vor Detail: wer die App zur Kostenkontrolle oeffnet, hat seine
+        // Antwort in der ersten Sekunde und muss nicht scrollen.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            StatTile(
+                label = stringResource(R.string.history_usage_week),
+                value = week.toString(),
+                unit = stringResource(R.string.history_usage_unit),
+                modifier = Modifier.weight(1f),
             )
-            if (unsynced > 0) {
-                Text(
-                    text = stringResource(R.string.history_unsynced, unsynced),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+            StatTile(
+                label = stringResource(R.string.history_usage_month),
+                value = month.toString(),
+                unit = stringResource(R.string.history_usage_unit),
+                modifier = Modifier.weight(1f),
+            )
         }
-    }
-}
-
-@Composable
-private fun UsageValue(label: String, value: Int) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        // Bleibt stehen: dieser Satz ist der Grund, warum den Zahlen zu trauen
+        // ist. Sie stammen aus dem Sendeprotokoll am Geraet, nicht aus einem
+        // Server, der offline sein kann.
         Text(
-            value.toString(),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
+            text = stringResource(R.string.history_usage_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.ff.muted,
         )
-        Text(stringResource(R.string.history_usage_unit), style = MaterialTheme.typography.labelSmall)
+        if (unsynced > 0) {
+            StatusPill(
+                text = stringResource(R.string.history_unsynced, unsynced),
+                tone = Tone.NEUTRAL,
+            )
+        }
     }
 }
 
 @Composable
 private fun CampaignRow(campaign: CampaignEntity, onClick: () -> Unit) {
     val aborted = campaign.status == CampaignStatus.ABORTED
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = if (aborted || campaign.failedCount > 0) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        ),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = ROW_FORMAT.format(
-                    Instant.ofEpochMilli(campaign.createdAt).atZone(ZoneId.systemDefault()),
-                ),
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Text(
-                text = campaign.groupName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = stringResource(
-                    R.string.history_row_summary,
-                    campaign.recipientCount,
-                    campaign.totalSegments,
-                    campaign.encoding,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = stringResource(statusLabel(campaign.status)),
-                style = MaterialTheme.typography.bodySmall,
-            )
+    val failed = campaign.failedCount > 0
+    val tone = when {
+        aborted -> Tone.CRITICAL
+        failed -> Tone.WARN
+        campaign.status == CampaignStatus.COMPLETED -> Tone.OK
+        else -> Tone.NEUTRAL
+    }
+
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            // Eine abgebrochene Aussendung bekommt eine rote Kante. Sie
+            // unterbricht die Liste sichtbar, auch wenn man nur daran
+            // vorbeiscrollt - der Chip allein taete das nicht.
+            if (aborted) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.error),
+                )
+            }
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NumberText(
+                        text = ROW_FORMAT.format(
+                            Instant.ofEpochMilli(campaign.createdAt).atZone(ZoneId.systemDefault()),
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+                    StatusPill(text = stringResource(statusLabel(campaign.status)), tone = tone)
+                }
+                Text(
+                    text = campaign.groupName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                NumberText(
+                    text = stringResource(
+                        R.string.history_row_summary,
+                        campaign.recipientCount,
+                        campaign.totalSegments,
+                        campaign.encoding,
+                    ),
+                    color = if (aborted) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.ff.muted
+                    },
+                )
+            }
         }
     }
 }

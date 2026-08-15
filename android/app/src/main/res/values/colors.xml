@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#B3120C</color>
+    <!--
+      Rauchanthrazit statt Rot.
+
+      Am Startbildschirm eines Feuerwehrhandys liegen mehrere rote Symbole
+      nebeneinander - Alarmierung, Einsatzverwaltung, Landesverband. Ein
+      weiteres rotes Quadrat waere dort nicht wiederzufinden. Der Florianstern
+      traegt das Rot, der Grund bleibt dunkel.
+    -->
+    <color name="ic_launcher_background">#221F1E</color>
+    <color name="splash_background">#221F1E</color>
 </resources>

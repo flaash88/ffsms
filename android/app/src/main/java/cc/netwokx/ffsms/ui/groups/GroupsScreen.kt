@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,7 +25,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +39,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.data.db.GroupWithCount
+import cc.netwokx.ffsms.ui.components.FfTopBar
+import cc.netwokx.ffsms.ui.components.NumberText
+import cc.netwokx.ffsms.ui.components.StatusPill
+import cc.netwokx.ffsms.ui.components.Tone
+import cc.netwokx.ffsms.ui.theme.StatNumber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +57,7 @@ fun GroupsScreen(
     var deleting by remember { mutableStateOf<GroupWithCount?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.groups_title)) }) },
+        topBar = { FfTopBar(stringResource(R.string.groups_title)) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.groups_new))
@@ -151,29 +156,36 @@ private fun GroupRow(
     onDelete: () -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier.padding(16.dp),
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(group.group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                // Die Empfaengerzahl ist die Zahl, mit der die Kosten
-                // multipliziert werden - sie gehoert gut sichtbar hierher.
                 Text(
-                    text = stringResource(R.string.groups_recipient_count, group.recipientCount) +
-                        if (group.invalidCount > 0) {
-                            stringResource(R.string.groups_invalid_count, group.invalidCount)
-                        } else {
-                            ""
-                        },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (group.invalidCount > 0) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    group.group.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                 )
+                if (group.invalidCount > 0) {
+                    // Bernstein, nicht Rot: ungueltige Nummern kosten nichts,
+                    // sie werden uebersprungen. Eine rote Warnung waere hier zu
+                    // laut und wuerde die echte abstumpfen.
+                    StatusPill(
+                        text = stringResource(R.string.groups_invalid_short, group.invalidCount),
+                        tone = Tone.WARN,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
             }
+            // Die Empfaengerzahl steht rechts als eigene Spalte in fester
+            // Laufweite. Wer eine Aussendung plant, ueberfliegt diese Spalte -
+            // sie ist der Multiplikator der Kosten.
+            NumberText(
+                text = group.recipientCount.toString(),
+                style = StatNumber,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(end = 4.dp),
+            )
             IconButton(onClick = onRename) {
                 Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_rename))
             }

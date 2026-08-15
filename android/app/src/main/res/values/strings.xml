@@ -21,7 +21,7 @@
     <string name="groups_new">Neue Gruppe</string>
     <string name="groups_new_hint">Name der Gruppe, z. B. „Aktivmannschaft"</string>
     <string name="groups_recipient_count">%1$d Empfänger</string>
-    <string name="groups_invalid_count">, davon %1$d ungültig</string>
+    <string name="groups_invalid_short">%1$d ungültig</string>
     <string name="groups_delete_title">Gruppe löschen?</string>
     <string name="groups_delete_text">„%1$s" und alle %2$d Empfänger werden gelöscht. Der Verlauf bereits versendeter Aussendungen bleibt erhalten.</string>
 
@@ -81,10 +81,10 @@
     <string name="compose_ucs2_explain">Diese Zeichen verhindern GSM-7 und mehr als halbieren die Segmentgröße (70 statt 160 Zeichen):</string>
     <string name="compose_ucs2_char">%1$s (%2$d×)</string>
     <string name="compose_clean">Text bereinigen</string>
+    <string name="compose_clean_saving">Text bereinigen — spart %1$d SMS</string>
     <string name="compose_cleaned_replaced">%1$d Zeichen ersetzt</string>
     <string name="compose_cleaned_removed">, %1$d entfernt</string>
     <string name="compose_cleaned_nothing">Nichts zu bereinigen — der Text ist bereits GSM-7.</string>
-    <string name="compose_saving">Spart %1$d SMS gegenüber dem aktuellen Text.</string>
 
     <string name="compose_send">Senden</string>
     <string name="compose_over_threshold">Über dem Warnschwellwert von %1$d SMS</string>
@@ -94,8 +94,10 @@
 
     <!-- Bestaetigungsdialog -->
     <string name="confirm_title">Aussendung bestätigen</string>
-    <string name="confirm_body">Es werden %1$d SMS verrechnet.\n\n%2$d Empfänger × %3$d Segmente je Nachricht (%4$s).\n\nVerteiler: %5$s</string>
-    <string name="confirm_body_ucs2_hint">\n\nAchtung: Durch Sonderzeichen wird UCS-2 verwendet. Mit „Text bereinigen" ließen sich %1$d SMS sparen.</string>
+    <string name="confirm_total_label">SMS werden verrechnet</string>
+    <string name="confirm_breakdown">%1$d Empfänger × %2$d Segmente je Nachricht (%3$s)</string>
+    <string name="confirm_group">Verteiler: %1$s</string>
+    <string name="confirm_ucs2_hint">Durch Sonderzeichen wird UCS-2 verwendet. Mit „Text bereinigen" ließen sich %1$d SMS sparen.</string>
     <string name="confirm_checkbox">Ich habe die Zahl %1$d geprüft</string>
     <string name="confirm_send">%1$d SMS jetzt senden</string>
     <string name="confirm_queued">Aussendung eingereiht.</string>
@@ -135,7 +137,6 @@
 
     <!-- Einstellungen -->
     <string name="settings_title">Einstellungen</string>
-    <string name="settings_backend">Backend</string>
     <string name="settings_backend_url">Backend-URL</string>
     <string name="settings_api_key">API-Key</string>
     <string name="settings_device_id">Geräte-Kennung</string>
@@ -154,7 +155,7 @@
     <string name="settings_max_campaign_desc">Harte Grenze. Wird sie überschritten, bricht der Versand ab.</string>
     <string name="settings_max_day">Obergrenze pro Tag (Segmente)</string>
     <string name="settings_max_day_desc">Harte Grenze über alle Aussendungen eines Kalendertages.</string>
-    <string name="settings_today_used">Heute verbraucht: %1$d von %2$d Segmenten</string>
+    <string name="settings_today_label">Segmente heute, von %1$d</string>
     <string name="settings_saved">Gespeichert.</string>
     <string name="settings_number_invalid">Bitte eine Zahl größer als 0 eingeben.</string>
 

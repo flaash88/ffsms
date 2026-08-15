@@ -10,8 +10,10 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ import cc.netwokx.ffsms.ui.privacy.PrivacyScreen
 import cc.netwokx.ffsms.ui.settings.ServerConfigScreen
 import cc.netwokx.ffsms.ui.settings.SettingsScreen
 import cc.netwokx.ffsms.ui.theme.FfSmsTheme
+import cc.netwokx.ffsms.ui.theme.ff
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,7 +83,10 @@ private fun FfSmsApp() {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            // Die Leiste bleibt hell und ruhig. Der ausgewaehlte Reiter wird
+            // durch die rote Pille markiert - das ist die zweite und letzte
+            // Stelle im Geruest, an der Rot vorkommt.
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 TABS.forEach { tab ->
                     val selected = currentRoute?.hierarchy?.any { it.route == tab.dest.route } == true
                     NavigationBarItem(
@@ -88,6 +94,13 @@ private fun FfSmsApp() {
                         onClick = { navController.navigateToTab(tab.dest.route) },
                         icon = { Icon(tab.icon, contentDescription = null) },
                         label = { Text(stringResource(tab.labelRes)) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = MaterialTheme.ff.muted,
+                            unselectedTextColor = MaterialTheme.ff.muted,
+                        ),
                     )
                 }
             }

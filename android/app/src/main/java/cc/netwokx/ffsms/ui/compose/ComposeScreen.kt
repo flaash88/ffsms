@@ -1,6 +1,10 @@
 package cc.netwokx.ffsms.ui.compose
 
 import android.Manifest
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,11 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,7 +35,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,9 +51,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.domain.sms.SmsEncoding
+import cc.netwokx.ffsms.ui.components.CostLevel
+import cc.netwokx.ffsms.ui.components.CostTile
+import cc.netwokx.ffsms.ui.components.FfTopBar
+import cc.netwokx.ffsms.ui.components.HazardStripe
+import cc.netwokx.ffsms.ui.components.NumberText
+import cc.netwokx.ffsms.ui.components.StatusPill
+import cc.netwokx.ffsms.ui.components.Tone
 import cc.netwokx.ffsms.ui.permissions.PermissionRequest
 import cc.netwokx.ffsms.ui.permissions.hasPermission
 import cc.netwokx.ffsms.ui.permissions.rememberPermissionGate
+import cc.netwokx.ffsms.ui.theme.ff
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +102,7 @@ fun ComposeScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.compose_title)) }) },
+        topBar = { FfTopBar(stringResource(R.string.compose_title)) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(
@@ -232,134 +240,123 @@ private fun GroupSelector(
 @Composable
 private fun CalculationCard(state: ComposeUiState) {
     val isUcs2 = state.info.encoding == SmsEncoding.UCS2
-    val overThreshold = state.overWarnThreshold
+    val level = when {
+        state.overHardLimit -> CostLevel.CRITICAL
+        state.overWarnThreshold -> CostLevel.WARN
+        else -> CostLevel.NEUTRAL
+    }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (overThreshold) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(
-                        if (isUcs2) R.string.compose_encoding_ucs2 else R.string.compose_encoding_gsm7,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                if (isUcs2) {
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                    Text(
-                        text = stringResource(R.string.compose_encoding_warning),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-
-            Text(
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Encoding und Zeichenzahl stehen ueber der Kostenzahl, nicht darunter:
+        // sie erklaeren, wie die Zahl zustande kommt.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusPill(
+                text = stringResource(
+                    if (isUcs2) R.string.compose_encoding_ucs2 else R.string.compose_encoding_gsm7,
+                ),
+                tone = if (isUcs2) Tone.WARN else Tone.OK,
+            )
+            Spacer(Modifier.width(8.dp))
+            NumberText(
                 text = stringResource(
                     R.string.compose_chars_segments,
                     state.info.charCount,
                     state.info.segments,
                 ),
-                style = MaterialTheme.typography.bodyMedium,
             )
+        }
+
+        if (isUcs2) {
+            Text(
+                text = stringResource(R.string.compose_encoding_warning),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.ff.warn,
+            )
+        }
+
+        CostTile(
+            value = state.totalSegments,
+            label = stringResource(R.string.compose_total_label),
+            level = level,
+            footnote = stringResource(
+                R.string.compose_times_recipients,
+                state.recipientCount,
+                state.totalSegments,
+            ),
+        )
+
+        if (state.info.segments > 0 && level == CostLevel.NEUTRAL) {
             Text(
                 text = stringResource(
-                    R.string.compose_times_recipients,
-                    state.recipientCount,
-                    state.totalSegments,
+                    R.string.compose_remaining,
+                    state.info.remainingInLastSegment,
                 ),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.ff.muted,
             )
-
-            Spacer(Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = state.totalSegments.toString(),
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (overThreshold) MaterialTheme.colorScheme.error else Color.Unspecified,
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.compose_total_label),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-
-            if (state.info.segments > 0) {
-                Text(
-                    text = stringResource(
-                        R.string.compose_remaining,
-                        state.info.remainingInLastSegment,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            if (overThreshold && !state.overHardLimit) {
-                Text(
-                    text = stringResource(
-                        R.string.compose_over_threshold,
-                        state.settings?.warnThresholdSegments ?: 0,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+        }
+        if (state.overWarnThreshold && !state.overHardLimit) {
+            Text(
+                text = stringResource(
+                    R.string.compose_over_threshold,
+                    state.settings?.warnThresholdSegments ?: 0,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.ff.warn,
+            )
         }
     }
 }
 
-/** Benennt die konkreten Zeichen, die UCS-2 erzwungen haben. */
+/**
+ * Benennt die konkreten Zeichen, die UCS-2 erzwungen haben.
+ *
+ * Bernstein, nicht Rot: das hier ist teuer, aber nicht verboten. Rot bliebe
+ * fuer die Obergrenze reserviert, hinter der der Versand tatsaechlich
+ * abbricht.
+ */
 @Composable
 private fun Ucs2Warning(state: ComposeUiState, onSanitize: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.compose_ucs2_explain),
-                style = MaterialTheme.typography.bodySmall,
+    val saving = state.savingBySanitize * state.recipientCount
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.ff.warnContainer, RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.ff.warn, RoundedCornerShape(12.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.compose_ucs2_explain),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.ff.warn,
+        )
+        state.info.offenders.forEach { offender ->
+            NumberText(
+                text = stringResource(R.string.compose_ucs2_char, offender.label, offender.count),
+                color = MaterialTheme.ff.warn,
             )
-            state.info.offenders.forEach { offender ->
-                Text(
-                    text = stringResource(R.string.compose_ucs2_char, offender.label, offender.count),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            if (state.savingBySanitize > 0 && state.recipientCount > 0) {
-                Text(
-                    text = stringResource(
-                        R.string.compose_saving,
-                        state.savingBySanitize * state.recipientCount,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            OutlinedButton(onClick = onSanitize) {
-                Icon(Icons.Default.AutoFixHigh, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.compose_clean))
-            }
+        }
+        // Der Knopf nennt den Betrag statt der Taetigkeit. Ein Knopf, der
+        // sagt, was er bringt, wird gedrueckt.
+        OutlinedButton(
+            onClick = onSanitize,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.ff.warn),
+            border = BorderStroke(1.dp, MaterialTheme.ff.warn),
+        ) {
+            Icon(Icons.Default.AutoFixHigh, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                if (saving > 0) {
+                    stringResource(R.string.compose_clean_saving, saving)
+                } else {
+                    stringResource(R.string.compose_clean)
+                },
+            )
         }
     }
 }
@@ -386,26 +383,57 @@ private fun ConfirmSendDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.confirm_title)) },
+        title = {
+            // Der Warnstreifen erscheint an genau zwei Stellen in der App.
+            // Hier markiert er die Schwelle, hinter der Geld ausgegeben wird -
+            // dasselbe Zeichen, das im Ruesthaus vor einer Absturzkante steht.
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                HazardStripe()
+                Text(stringResource(R.string.confirm_title))
+            }
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    stringResource(
-                        R.string.confirm_body,
-                        total,
+                CostTile(
+                    value = total,
+                    label = stringResource(R.string.confirm_total_label),
+                    level = CostLevel.CRITICAL,
+                )
+                NumberText(
+                    text = stringResource(
+                        R.string.confirm_breakdown,
                         recipients,
                         segmentsPerMessage,
                         encoding.name,
-                        groupName,
-                    ) + if (encoding == SmsEncoding.UCS2 && savingBySanitize > 0) {
-                        stringResource(R.string.confirm_body_ucs2_hint, savingBySanitize)
-                    } else {
-                        ""
-                    },
+                    ),
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.confirm_group, groupName),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (encoding == SmsEncoding.UCS2 && savingBySanitize > 0) {
+                    Text(
+                        text = stringResource(R.string.confirm_ucs2_hint, savingBySanitize),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.ff.warn,
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.ff.critContainer, RoundedCornerShape(10.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(10.dp)),
+                ) {
                     Checkbox(checked = checked, onCheckedChange = { checked = it })
-                    Text(stringResource(R.string.confirm_checkbox, total))
+                    Text(
+                        text = stringResource(R.string.confirm_checkbox, total),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
                 }
             }
         },

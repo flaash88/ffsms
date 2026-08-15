@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Stilisierte Sprechblase auf dem Feuerwehr-Rot des Hintergrunds. -->
+<!--
+  Florianstern in Florianrot, in der Mitte die Sprechblase.
+
+  Der Stern macht die Feuerwehr erkennbar, die Sprechblase unterscheidet die
+  App von den anderen Feuerwehr-Apps auf demselben Geraet. Die Sicherheitszone
+  adaptiver Symbole ist beruecksichtigt: alles Wesentliche liegt innerhalb der
+  mittleren 72 von 108 Einheiten und wird von keiner Maske beschnitten.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,34h48a6,6 0,0 1,6 6v26a6,6 0,0 1,-6 6h-24l-14,12v-12h-10a6,6 0,0 1,-6 -6v-26a6,6 0,0 1,6 -6z" />
+
     <path
         android:fillColor="#B3120C"
-        android:pathData="M40,46h28v5h-28z" />
+        android:pathData="M54,20 L59.5,40.5 L80,35.5 L66,49 L84,58.5 L63,59.5 L68,80 L54,65 L40,80 L45,59.5 L24,58.5 L42,49 L28,35.5 L48.5,40.5 Z" />
+
     <path
-        android:fillColor="#B3120C"
-        android:pathData="M40,56h20v5h-20z" />
+        android:fillColor="#F7F4F2"
+        android:pathData="M42,44h24a4,4 0,0 1,4 4v13a4,4 0,0 1,-4 4h-11l-7,6v-6h-6a4,4 0,0 1,-4 -4v-13a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#221F1E"
+        android:pathData="M47,50h14v3h-14z" />
+    <path
+        android:fillColor="#221F1E"
+        android:pathData="M47,56h9v3h-9z" />
 </vector>
