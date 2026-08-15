@@ -265,11 +265,21 @@ Vier Elemente, die auf jedem Bildschirm gleich funktionieren
 | `CostTile` | 40 px, feste Laufweite. Neutral bis zur Warnschwelle, dann Bernstein, über der Obergrenze Rot **mit Grund und Rahmen** — der Zustand steckt in der Fläche, nicht nur in der Farbe. |
 | `StatusPill` | Immer ein Wort, nie ein Symbol allein. Symbole sind am Handy im Rüsthaus zu klein. |
 | `HazardStripe` | Diagonale Schraffur, nur im Bestätigungsdialog und bei einer abgebrochenen Aussendung. Sonst nirgends. |
+| `EdgeCard` | Karte mit farbiger Kante links. Verlauf und Verteiler teilen sich dieselbe Form. Farbig wird die Kante **nur bei einem Problem**; sonst bleibt sie ein dünner Strich. Was hervorsticht, kann nur hervorstechen, solange nicht alles hervorsticht. |
 
 Dass die Kostenkachel im Warnfall **Grund und Rahmen** wechselt und nicht nur
 den Farbton, ist kein Zierrat: rund acht Prozent der Männer haben eine
 Rotsehschwäche. Ein Zustand, der nur an der Farbe hängt, ist für diese Leute
 gar kein Zustand.
+
+### Navigation
+
+Ein Reiter führt immer auf seine Übersicht — bewusst **ohne** `saveState` /
+`restoreState`. Ein Reiter, der sich merkt, wo man ihn zuletzt verlassen hat,
+öffnet mitten in einer Detailansicht und sieht aus, als hätte die App den
+falschen Bildschirm geladen. Der Preis dafür ist gering: die Detailansichten
+haben keinen Zustand, den zu bewahren sich lohnt — sie lesen ohnehin frisch
+aus der Datenbank.
 
 ### Schrift
 

@@ -152,10 +152,22 @@ private fun FfSmsApp() {
     }
 }
 
+/**
+ * Ein Reiter fuehrt immer auf seine Uebersicht.
+ *
+ * Bewusst OHNE saveState/restoreState. Damit merkt sich ein Reiter nicht
+ * mehr, wo man ihn zuletzt verlassen hat: wer auf "Verteiler" tippt, will die
+ * Liste der Verteiler sehen und nicht die Gruppe, die er vor zwei Stunden
+ * offen hatte. Ein Reiter, der irgendwo mitten in einer Detailansicht
+ * aufmacht, sieht aus, als haette die App den falschen Bildschirm geladen.
+ *
+ * Der Preis ist gering: die Detailansichten haben keinen Zustand, den zu
+ * bewahren sich lohnt - sie lesen ihre Daten ohnehin frisch aus der Datenbank.
+ */
 private fun NavHostController.navigateToTab(route: String) {
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+        popUpTo(graph.findStartDestination().id) { saveState = false }
         launchSingleTop = true
-        restoreState = true
+        restoreState = false
     }
 }

@@ -6,8 +6,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -183,6 +187,50 @@ fun CostTile(
 
 /** Was ein Chip aussagt. */
 enum class Tone { OK, WARN, CRITICAL, NEUTRAL }
+
+/**
+ * Karte mit farbiger Kante an der linken Seite.
+ *
+ * Die Kante unterbricht eine Liste sichtbar, auch wenn man nur daran
+ * vorbeiscrollt - ein Chip allein taete das nicht. Sie traegt dieselbe
+ * Bedeutung wie die Chips: bernstein heisst "schau nach", rot heisst "so
+ * geht das nicht".
+ *
+ * Bei Tone.NEUTRAL bleibt die Kante als duenner Strich stehen, statt zu
+ * verschwinden. Sonst haetten die unauffaelligen Eintraege einer Liste eine
+ * andere Form als die auffaelligen, und das Auge muesste zweimal hinsehen,
+ * um zu erkennen, dass es nichts zu sehen gibt.
+ */
+@Composable
+fun EdgeCard(
+    tone: Tone,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val ff = MaterialTheme.ff
+    val edge = when (tone) {
+        Tone.CRITICAL -> MaterialTheme.colorScheme.error
+        Tone.WARN -> ff.warn
+        Tone.OK -> ff.ok
+        Tone.NEUTRAL -> ff.hairline
+    }
+
+    Card(modifier = modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            Box(
+                modifier = Modifier
+                    .width(if (tone == Tone.NEUTRAL) 2.dp else 4.dp)
+                    .fillMaxHeight()
+                    .background(edge),
+            )
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+                content = content,
+            )
+        }
+    }
+}
 
 /**
  * Statuschip.

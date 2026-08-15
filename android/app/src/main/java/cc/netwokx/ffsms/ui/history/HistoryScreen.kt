@@ -8,20 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.data.db.CampaignEntity
 import cc.netwokx.ffsms.data.db.CampaignStatus
+import cc.netwokx.ffsms.ui.components.EdgeCard
 import cc.netwokx.ffsms.ui.components.FfTopBar
 import cc.netwokx.ffsms.ui.components.NumberText
 import cc.netwokx.ffsms.ui.components.StatTile
@@ -179,83 +174,65 @@ private fun CampaignRow(campaign: CampaignEntity, onClick: () -> Unit) {
     // Nichts angekommen ist etwas anderes als "ein paar Ausfaelle": das eine
     // ist ein kaputtes Geraet, das andere ein schlecht erreichter Empfaenger.
     val allFailed = failed > 0 && failed >= campaign.recipientCount
-    val markiert = aborted || failed > 0
 
+    // Der Chip darf gruen sein, die Kante nicht. Eine Kante an jedem Eintrag
+    // in Signalfarbe waere Dekoration: was hervorsticht, kann nur hervorstechen,
+    // solange nicht alles hervorsticht. Farbig wird die Kante deshalb nur bei
+    // einem Problem, sonst bleibt sie ein duenner Strich.
     val tone = when {
         aborted || allFailed -> Tone.CRITICAL
         failed > 0 -> Tone.WARN
         campaign.status == CampaignStatus.COMPLETED -> Tone.OK
         else -> Tone.NEUTRAL
     }
+    val edgeTone = when {
+        aborted || allFailed -> Tone.CRITICAL
+        failed > 0 -> Tone.WARN
+        else -> Tone.NEUTRAL
+    }
 
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            // Abbruch UND Fehlschlaege bekommen eine farbige Kante. Sie
-            // unterbricht die Liste sichtbar, auch wenn man nur daran
-            // vorbeiscrollt - der Chip allein taete das nicht. Genau hier lag
-            // der Fehler: "abgeschlossen" stand gruen da, waehrend in der
-            // Detailansicht jeder Empfaenger fehlgeschlagen war.
-            if (markiert) {
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(
-                            if (aborted || allFailed) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.ff.warn
-                            },
-                        ),
-                )
-            }
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    NumberText(
-                        text = ROW_FORMAT.format(
-                            Instant.ofEpochMilli(campaign.createdAt).atZone(ZoneId.systemDefault()),
-                        ),
-                        modifier = Modifier.weight(1f),
-                    )
-                    // Bei Fehlschlaegen zeigt der Chip die Fehlerzahl statt
-                    // "abgeschlossen". Der Status stimmt zwar - der Lauf ist
-                    // durch -, beantwortet aber nicht die Frage, die man an
-                    // dieser Stelle hat: ist es angekommen?
-                    StatusPill(
-                        text = when {
-                            allFailed -> stringResource(R.string.history_row_all_failed)
-                            failed > 0 -> stringResource(R.string.history_row_failed, failed)
-                            else -> stringResource(statusLabel(campaign.status))
-                        },
-                        tone = tone,
-                    )
-                }
-                Text(
-                    text = campaign.groupName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                NumberText(
-                    text = stringResource(
-                        R.string.history_row_summary,
-                        campaign.recipientCount,
-                        campaign.totalSegments,
-                        campaign.encoding,
-                    ),
-                    color = when {
-                        aborted || allFailed -> MaterialTheme.colorScheme.error
-                        failed > 0 -> MaterialTheme.ff.warn
-                        else -> MaterialTheme.ff.muted
-                    },
-                )
-            }
+    EdgeCard(tone = edgeTone, modifier = Modifier.clickable(onClick = onClick)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            NumberText(
+                text = ROW_FORMAT.format(
+                    Instant.ofEpochMilli(campaign.createdAt).atZone(ZoneId.systemDefault()),
+                ),
+                modifier = Modifier.weight(1f),
+            )
+            // Bei Fehlschlaegen zeigt der Chip die Fehlerzahl statt
+            // "abgeschlossen". Der Status stimmt zwar - der Lauf ist durch -,
+            // beantwortet aber nicht die Frage, die man an dieser Stelle hat:
+            // ist es angekommen?
+            StatusPill(
+                text = when {
+                    allFailed -> stringResource(R.string.history_row_all_failed)
+                    failed > 0 -> stringResource(R.string.history_row_failed, failed)
+                    else -> stringResource(statusLabel(campaign.status))
+                },
+                tone = tone,
+            )
         }
+        Text(
+            text = campaign.groupName,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        NumberText(
+            text = stringResource(
+                R.string.history_row_summary,
+                campaign.recipientCount,
+                campaign.totalSegments,
+                campaign.encoding,
+            ),
+            color = when {
+                aborted || allFailed -> MaterialTheme.colorScheme.error
+                failed > 0 -> MaterialTheme.ff.warn
+                else -> MaterialTheme.ff.muted
+            },
+        )
     }
 }
 

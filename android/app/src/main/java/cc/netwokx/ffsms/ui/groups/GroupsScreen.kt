@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -39,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.netwokx.ffsms.R
 import cc.netwokx.ffsms.data.db.GroupWithCount
+import cc.netwokx.ffsms.ui.components.EdgeCard
 import cc.netwokx.ffsms.ui.components.FfTopBar
 import cc.netwokx.ffsms.ui.components.NumberText
 import cc.netwokx.ffsms.ui.components.StatusPill
@@ -155,22 +155,32 @@ private fun GroupRow(
     onRename: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    // Dieselbe Kante wie im Verlauf, mit derselben Bedeutung. Ein Verteiler
+    // ohne gueltige Empfaenger ist rot, weil er nicht senden kann - wer ihn
+    // auswaehlt und auf Senden tippt, erreicht niemanden. Ungueltige Nummern
+    // darin sind bernstein: sie werden uebersprungen und kosten nichts.
+    val gueltig = group.recipientCount - group.invalidCount
+    val tone = when {
+        gueltig <= 0 -> Tone.CRITICAL
+        group.invalidCount > 0 -> Tone.WARN
+        else -> Tone.NEUTRAL
+    }
+
+    EdgeCard(tone = tone, modifier = Modifier.clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     group.group.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                if (group.invalidCount > 0) {
-                    // Bernstein, nicht Rot: ungueltige Nummern kosten nichts,
-                    // sie werden uebersprungen. Eine rote Warnung waere hier zu
-                    // laut und wuerde die echte abstumpfen.
-                    StatusPill(
+                when {
+                    gueltig <= 0 -> StatusPill(
+                        text = stringResource(R.string.groups_no_valid),
+                        tone = Tone.CRITICAL,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    group.invalidCount > 0 -> StatusPill(
                         text = stringResource(R.string.groups_invalid_short, group.invalidCount),
                         tone = Tone.WARN,
                         modifier = Modifier.padding(top = 4.dp),
@@ -181,9 +191,13 @@ private fun GroupRow(
             // Laufweite. Wer eine Aussendung plant, ueberfliegt diese Spalte -
             // sie ist der Multiplikator der Kosten.
             NumberText(
-                text = group.recipientCount.toString(),
+                text = gueltig.toString(),
                 style = StatNumber,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (gueltig <= 0) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
                 modifier = Modifier.padding(end = 4.dp),
             )
             IconButton(onClick = onRename) {

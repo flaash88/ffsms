@@ -22,6 +22,7 @@
     <string name="groups_new_hint">Name der Gruppe, z. B. „Aktivmannschaft"</string>
     <string name="groups_recipient_count">%1$d Empfänger</string>
     <string name="groups_invalid_short">%1$d ungültig</string>
+    <string name="groups_no_valid">keine gültigen Empfänger</string>
     <string name="groups_delete_title">Gruppe löschen?</string>
     <string name="groups_delete_text">„%1$s" und alle %2$d Empfänger werden gelöscht. Der Verlauf bereits versendeter Aussendungen bleibt erhalten.</string>
 
