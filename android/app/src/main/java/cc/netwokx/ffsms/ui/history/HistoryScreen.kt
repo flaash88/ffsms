@@ -175,25 +175,38 @@ private fun UsageCard(week: Int, month: Int, unsynced: Int) {
 @Composable
 private fun CampaignRow(campaign: CampaignEntity, onClick: () -> Unit) {
     val aborted = campaign.status == CampaignStatus.ABORTED
-    val failed = campaign.failedCount > 0
+    val failed = campaign.failedCount
+    // Nichts angekommen ist etwas anderes als "ein paar Ausfaelle": das eine
+    // ist ein kaputtes Geraet, das andere ein schlecht erreichter Empfaenger.
+    val allFailed = failed > 0 && failed >= campaign.recipientCount
+    val markiert = aborted || failed > 0
+
     val tone = when {
-        aborted -> Tone.CRITICAL
-        failed -> Tone.WARN
+        aborted || allFailed -> Tone.CRITICAL
+        failed > 0 -> Tone.WARN
         campaign.status == CampaignStatus.COMPLETED -> Tone.OK
         else -> Tone.NEUTRAL
     }
 
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            // Eine abgebrochene Aussendung bekommt eine rote Kante. Sie
+            // Abbruch UND Fehlschlaege bekommen eine farbige Kante. Sie
             // unterbricht die Liste sichtbar, auch wenn man nur daran
-            // vorbeiscrollt - der Chip allein taete das nicht.
-            if (aborted) {
+            // vorbeiscrollt - der Chip allein taete das nicht. Genau hier lag
+            // der Fehler: "abgeschlossen" stand gruen da, waehrend in der
+            // Detailansicht jeder Empfaenger fehlgeschlagen war.
+            if (markiert) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.error),
+                        .background(
+                            if (aborted || allFailed) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.ff.warn
+                            },
+                        ),
                 )
             }
             Column(
@@ -210,7 +223,18 @@ private fun CampaignRow(campaign: CampaignEntity, onClick: () -> Unit) {
                         ),
                         modifier = Modifier.weight(1f),
                     )
-                    StatusPill(text = stringResource(statusLabel(campaign.status)), tone = tone)
+                    // Bei Fehlschlaegen zeigt der Chip die Fehlerzahl statt
+                    // "abgeschlossen". Der Status stimmt zwar - der Lauf ist
+                    // durch -, beantwortet aber nicht die Frage, die man an
+                    // dieser Stelle hat: ist es angekommen?
+                    StatusPill(
+                        text = when {
+                            allFailed -> stringResource(R.string.history_row_all_failed)
+                            failed > 0 -> stringResource(R.string.history_row_failed, failed)
+                            else -> stringResource(statusLabel(campaign.status))
+                        },
+                        tone = tone,
+                    )
                 }
                 Text(
                     text = campaign.groupName,
@@ -224,10 +248,10 @@ private fun CampaignRow(campaign: CampaignEntity, onClick: () -> Unit) {
                         campaign.totalSegments,
                         campaign.encoding,
                     ),
-                    color = if (aborted) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.ff.muted
+                    color = when {
+                        aborted || allFailed -> MaterialTheme.colorScheme.error
+                        failed > 0 -> MaterialTheme.ff.warn
+                        else -> MaterialTheme.ff.muted
                     },
                 )
             }

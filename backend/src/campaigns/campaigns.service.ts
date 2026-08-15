@@ -27,10 +27,17 @@ export class CampaignsService {
   /**
    * Nimmt eine Aussendung entgegen.
    *
-   * Idempotent ueber die campaign_id: ein wiederholter Upload aktualisiert
+   * Idempotent ueber die campaign_id: ein unveraenderter Upload aktualisiert
    * den Datensatz und loest KEINEN erneuten Alarm aus. Das Geraet laedt
    * offene Eintraege erneut hoch, wenn es zwischendurch offline war - daraus
    * darf kein Alarmgewitter entstehen.
+   *
+   * Eine Ausnahme gibt es: wird die Lage SCHLECHTER, wird alarmiert. Das ist
+   * kein Sonderfall, sondern der Regelfall bei Fehlschlaegen. Beim Absetzen
+   * weiss das Geraet nicht, ob eine Nachricht ankommt; die Quittung des
+   * Modems trifft erst danach ein. Der erste Upload meldet deshalb fast
+   * immer "failed: 0", der zweite die Wahrheit. Ohne diese Ausnahme koennte
+   * der Alarm "failed > 0" praktisch nie ausloesen - er waere Zierde.
    */
   async ingest(dto: CreateCampaignDto): Promise<IngestResult> {
     const existing = await this.repo.findOne({ where: { campaignId: dto.campaign_id } });
@@ -50,7 +57,16 @@ export class CampaignsService {
     await this.repo.upsert(entity, ['campaignId']);
 
     if (existing) {
-      this.logger.log(`Erneuter Upload von ${dto.campaign_id}, kein Alarm.`);
+      if (gotWorse(existing, entity)) {
+        this.logger.warn(
+          `Erneuter Upload von ${dto.campaign_id}: Lage verschlechtert ` +
+            `(failed ${existing.failed} -> ${entity.failed}, ` +
+            `abgebrochen ${existing.abortedReason ?? '-'} -> ${entity.abortedReason ?? '-'}). Alarm.`,
+        );
+        await this.maybeAlert(entity);
+      } else {
+        this.logger.log(`Erneuter Upload von ${dto.campaign_id}, unveraendert, kein Alarm.`);
+      }
       return { campaignId: dto.campaign_id, duplicate: true };
     }
 
@@ -120,4 +136,16 @@ export class CampaignsService {
       .getRawMany<{ deviceId: string }>();
     return rows.map((row) => row.deviceId);
   }
+}
+
+/**
+ * Ist der neue Stand schlechter als der gespeicherte?
+ *
+ * Nur mehr Fehlschlaege oder ein neu hinzugekommener Abbruchgrund zaehlen.
+ * Eine gesunkene Fehlerzahl - etwa nach einem erfolgreichen Neuversuch von
+ * Hand - loest bewusst nichts aus: gute Nachrichten brauchen keinen Alarm.
+ */
+function gotWorse(before: Campaign, after: Campaign): boolean {
+  if (after.failed > before.failed) return true;
+  return after.abortedReason !== null && before.abortedReason === null;
 }

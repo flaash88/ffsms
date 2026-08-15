@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.SmsManager
 import cc.netwokx.ffsms.app.ServiceLocator
+import cc.netwokx.ffsms.notify.Notifications
+import cc.netwokx.ffsms.sync.SyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,7 +42,10 @@ class SmsStatusReceiver : BroadcastReceiver() {
         // durch ist. Ohne das wuerde der Prozess unter Umstaenden vorher beendet
         // und der Status ginge verloren.
         val pending = goAsync()
-        val dao = ServiceLocator.database(context.applicationContext).sendLogDao()
+        val app = context.applicationContext
+        val db = ServiceLocator.database(app)
+        val dao = db.sendLogDao()
+        val campaigns = db.campaignDao()
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -58,6 +63,21 @@ class SmsStatusReceiver : BroadcastReceiver() {
                     action == ACTION_DELIVERED ->
                         dao.recordPartFailed(campaignId, msisdn, resultCode, now)
                 }
+
+                // Die Fehlerzahl der Kampagne nachtragen. Der Worker war schon
+                // fertig, als diese Quittung unterwegs war - ohne das bliebe
+                // in der Uebersicht "abgeschlossen" ohne jeden Hinweis stehen.
+                val before = campaigns.failedCountOf(campaignId) ?: 0
+                val failed = dao.failedCount(campaignId)
+                if (failed != before) {
+                    campaigns.updateFailedCount(campaignId, failed)
+                    // Beim ersten Fehlschlag einmal melden. Wer die App
+                    // weggelegt hat, erfaehrt sonst nie davon.
+                    if (before == 0) {
+                        Notifications.campaignHasFailures(app, failed)
+                    }
+                    SyncScheduler.requestSyncNow(app)
+                }
             } finally {
                 pending.finish()
             }
@@ -65,14 +85,43 @@ class SmsStatusReceiver : BroadcastReceiver() {
     }
 }
 
-/** Klartext fuer die Fehlercodes des SmsManagers. */
+/**
+ * Klartext fuer die Fehlercodes des SmsManagers.
+ *
+ * Die Zahlen stehen hier als Literale und nicht als SmsManager-Konstanten:
+ * die meisten davon gibt es erst ab API 30, die App laeuft ab API 26. Ein
+ * roher "Fehlercode 32" hilft am Feuerwehrhandy niemandem weiter - und
+ * ausgerechnet 32 heisst "keine Standard-SMS-App", was auf einem Geraet ohne
+ * SIM-Karte auftritt und wie ein Fehler der App aussieht, ohne einer zu sein.
+ */
 fun smsErrorText(code: Int?): String = when (code) {
     null -> "Unbekannter Fehler"
-    SmsManager.RESULT_ERROR_GENERIC_FAILURE -> "Allgemeiner Fehler"
-    SmsManager.RESULT_ERROR_NO_SERVICE -> "Kein Netz"
-    SmsManager.RESULT_ERROR_NULL_PDU -> "Leere Nachricht (PDU)"
-    SmsManager.RESULT_ERROR_RADIO_OFF -> "Funkmodul aus (Flugmodus?)"
-    SmsManager.RESULT_ERROR_LIMIT_EXCEEDED -> "Sendelimit des Geraets erreicht"
-    SmsManager.RESULT_ERROR_SHORT_CODE_NOT_ALLOWED -> "Kurzwahl nicht erlaubt"
+    1 -> "Allgemeiner Fehler"
+    2 -> "Funkmodul aus (Flugmodus?)"
+    3 -> "Leere Nachricht (PDU)"
+    4 -> "Kein Netz"
+    5 -> "Sendelimit des Geraets erreicht"
+    6 -> "Durch die SIM gesperrte Nummer (FDN)"
+    7, 8 -> "Kurzwahl nicht erlaubt"
+    9 -> "Funkmodul nicht verfuegbar"
+    10 -> "Vom Netz abgewiesen"
+    11 -> "Ungueltige Nummer"
+    12 -> "Geraet nicht sendebereit"
+    13 -> "Kein Speicher auf der SIM"
+    14 -> "Ungueltiges SMS-Format"
+    15 -> "Systemfehler"
+    16 -> "Fehler im Funkmodul"
+    17 -> "Netzfehler"
+    18 -> "Zeichen nicht kodierbar"
+    19 -> "SMS-Zentrale nicht eingerichtet"
+    20 -> "Vom Anbieter nicht erlaubt"
+    21 -> "Interner Fehler"
+    22 -> "Keine freien Ressourcen"
+    23 -> "Abgebrochen"
+    24 -> "Vom Geraet nicht unterstuetzt"
+    29 -> "Waehrend eines Notrufs gesperrt"
+    30 -> "Auch nach Wiederholung des Netzes nicht zustellbar"
+    31 -> "Fehler im Telefondienst"
+    32 -> "Keine SIM-Karte bzw. keine Standard-SMS-App"
     else -> "Fehlercode $code"
 }

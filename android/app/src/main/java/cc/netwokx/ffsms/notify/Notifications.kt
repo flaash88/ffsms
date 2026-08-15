@@ -78,6 +78,22 @@ object Notifications {
         )
     }
 
+    /**
+     * Fehlschlaege, die erst nach dem Lauf bekannt werden.
+     *
+     * Beim Absetzen weiss das Geraet nicht, ob eine Nachricht ankommt - die
+     * Quittung des Modems trifft spaeter ein, oft erst nach Sekunden. Wer die
+     * App inzwischen weggelegt hat, erfuehre sonst nie davon.
+     */
+    fun campaignHasFailures(context: Context, failed: Int) {
+        notify(
+            context,
+            title = context.getString(R.string.notif_failed_title),
+            text = context.getString(R.string.notif_failed_text, failed),
+            high = true,
+        )
+    }
+
     fun campaignAborted(context: Context, reason: AbortReason, dispatchedSoFar: Int) {
         notify(
             context,

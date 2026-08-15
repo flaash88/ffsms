@@ -115,6 +115,12 @@
     <string name="history_row_summary">%1$d Empfänger · %2$d Segmente · %3$s</string>
     <string name="history_unsynced">%1$d noch nicht übertragen</string>
 
+    <string name="notif_failed_title">Aussendung: Fehler gemeldet</string>
+    <string name="notif_failed_text">%1$d Empfänger konnten nicht erreicht werden. Details im Verlauf.</string>
+
+    <string name="history_row_failed">%1$d fehlgeschlagen</string>
+    <string name="history_row_all_failed">nichts zugestellt</string>
+
     <string name="campaign_status_queued">eingereiht</string>
     <string name="campaign_status_running">läuft</string>
     <string name="campaign_status_completed">abgeschlossen</string>

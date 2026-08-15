@@ -197,13 +197,45 @@ describe('POST /api/v1/campaigns', () => {
       expect(repo.rows.size).toBe(1);
     });
 
-    it('alarmiert bei einem wiederholten Upload kein zweites Mal', async () => {
+    it('alarmiert bei einem unveraenderten wiederholten Upload kein zweites Mal', async () => {
       // Das Geraet laedt offene Eintraege nach einer Offline-Phase erneut
       // hoch. Daraus darf kein Alarmgewitter werden.
       await post(payload({ total_segments: 400 })).expect(200);
       expect(sentMessages).toHaveLength(1);
 
       await post(payload({ total_segments: 400 })).expect(200);
+      expect(sentMessages).toHaveLength(1);
+    });
+
+    it('alarmiert, wenn ein Nachtrag Fehlschlaege meldet', async () => {
+      // Der Regelfall, nicht der Sonderfall: beim Absetzen weiss das Geraet
+      // noch nicht, ob eine Nachricht ankommt. Der erste Upload meldet
+      // deshalb fast immer "failed: 0", der zweite die Wahrheit. Ohne diese
+      // Ausnahme koennte der Alarm bei Fehlschlaegen nie ausloesen.
+      await post(payload({ failed: 0 })).expect(200);
+      expect(sentMessages).toHaveLength(0);
+
+      const nachtrag = await post(payload({ failed: 15 })).expect(200);
+      expect(nachtrag.body.duplicate).toBe(true);
+      expect(sentMessages).toHaveLength(1);
+      expect(sentMessages[0].body).toContain('15');
+    });
+
+    it('alarmiert, wenn ein Nachtrag einen Abbruch meldet', async () => {
+      await post(payload()).expect(200);
+      expect(sentMessages).toHaveLength(0);
+
+      await post(payload({ aborted_reason: 'limit_daily' })).expect(200);
+      expect(sentMessages).toHaveLength(1);
+    });
+
+    it('schweigt, wenn die Fehlerzahl sinkt', async () => {
+      // Ein erfolgreicher Neuversuch von Hand. Gute Nachrichten brauchen
+      // keinen Alarm.
+      await post(payload({ failed: 3 })).expect(200);
+      expect(sentMessages).toHaveLength(1);
+
+      await post(payload({ failed: 0 })).expect(200);
       expect(sentMessages).toHaveLength(1);
     });
   });

@@ -221,6 +221,33 @@ interface CampaignDao {
 
     @Query("UPDATE campaigns SET synced = 1, syncedAt = :at WHERE id = :id")
     suspend fun markSynced(id: String, at: Long)
+
+    /**
+     * Traegt die Fehlerzahl nach, sobald das Modem sich meldet.
+     *
+     * Der Worker ist mit dem Absetzen fertig, lange bevor die SENT-Quittungen
+     * eintreffen - beim Absetzen weiss niemand, ob eine Nachricht ankommt.
+     * Ohne dieses Nachtragen bleibt in der Kampagne "0 fehlgeschlagen"
+     * stehen, obwohl in send_log jeder einzelne Empfaenger auf FAILED steht.
+     * Genau dieser Fall ist am Geraet aufgefallen: Uebersicht gruen,
+     * Detailansicht rot.
+     *
+     * Aendert sich die Zahl, wird synced zurueckgesetzt. Der Server hat dann
+     * eine falsche Zahl und muss sie noch einmal bekommen - sonst waere der
+     * Alarm "failed > 0" wirkungslos, weil der erste Upload immer 0 meldet.
+     */
+    @Query(
+        """
+        UPDATE campaigns
+        SET failedCount = :failed,
+            synced = CASE WHEN failedCount != :failed THEN 0 ELSE synced END
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateFailedCount(id: String, failed: Int)
+
+    @Query("SELECT failedCount FROM campaigns WHERE id = :id")
+    suspend fun failedCountOf(id: String): Int?
 }
 
 @Dao

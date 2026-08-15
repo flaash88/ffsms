@@ -113,6 +113,40 @@ Status und Versuchszähler. Ein automatischer Retry, der nach einem
 Teilversand von vorne beginnt, ist die wahrscheinlichste Ursache des
 2100er-Vorfalls.
 
+### „gesendet" heißt nicht „angekommen"
+
+Drei Zustände, die sich nicht vermischen lassen:
+
+| Zustand | Was er bedeutet |
+|---|---|
+| **gesendet** | Das Netz hat die Nachricht angenommen. Mehr nicht. |
+| **zugestellt** | Der Zustellbericht des Empfängergeräts ist eingetroffen. |
+| **fehlgeschlagen** | Das Modem hat einen Fehler gemeldet, mit Code. |
+
+Der Unterschied ist keine Haarspalterei. Ein Zustellbericht ist **optional**:
+manche Netze liefern keinen, manche Empfängergeräte quittieren nicht. Bleibt
+eine Zeile auf „gesendet" stehen, heißt das also nicht, dass etwas
+schiefgegangen ist — es heißt, dass es niemand bestätigt hat.
+
+Der wichtige Fall dabei: **Fehlschläge stehen erst nach dem Lauf fest.** Der
+Worker ist mit dem Absetzen fertig, lange bevor die Quittungen des Modems
+eintreffen. Die Fehlerzahl der Aussendung wird deshalb vom Statusreceiver
+nachgetragen, und die Aussendung wird für einen erneuten Upload markiert —
+sonst stünde beim Server dauerhaft `failed: 0`, und der Alarm könnte nie
+auslösen.
+
+Entsprechend alarmiert das Backend bei einem wiederholten Upload, **wenn die
+Lage schlechter geworden ist** (mehr Fehlschläge oder ein neuer Abbruchgrund).
+Ein unveränderter Nachsync bleibt still, eine gesunkene Fehlerzahl ebenso.
+
+**Festnetznummern** werden schon beim Import abgefangen: libphonenumber
+erkennt sie als `FIXED_LINE`, die Nummer wird als ungültig markiert und beim
+Versand übersprungen — sie kostet also nichts. Sie steht mit dem Grund
+„Festnetznummer, kann keine SMS empfangen" im Verteiler, damit klar ist,
+warum. Was die App nicht kann: erkennen, ob ein Anbieter eine SMS an eine
+Mobilnummer stillschweigend verwirft. Dafür gibt es nur den Zustellbericht.
+
+
 Dazu kommt: Nummern werden beim Import per libphonenumber nach **E.164**
 normalisiert. Ohne das würden `0664 1234567`, `+43 664 1234567` und
 `0043-664-1234567` als drei verschiedene Empfänger gelten und dieselbe Person
