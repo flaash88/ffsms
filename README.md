@@ -98,12 +98,33 @@ Der Worker fügt die Zeile **vor** dem Absetzen der SMS ein. Liefert das Insert
 abgeschossen und der Worker vom System neu gestartet wird.
 
 **4. Harte Obergrenzen.**
-300 Segmente je Aussendung, 1000 Segmente pro Kalendertag. In den Einstellungen
-anpassbar, aber nicht abschaltbar (Werte ≤ 0 werden auf 1 angehoben). Bei
-Überschreitung bricht der Worker ab, protokolliert den Grund und meldet ihn ans
-Backend. Es gibt **keinen** „trotzdem weiter"-Pfad im Code. Das Tageslimit wird
-vor *jedem einzelnen Empfänger* neu geprüft, nicht nur einmal vorab — sonst
-könnte eine parallel laufende zweite Kampagne daran vorbeirutschen.
+300 Segmente je Aussendung, 1000 pro Kalendertag, **500 pro Kalendermonat**. In
+den Einstellungen anpassbar, aber nicht abschaltbar (Werte ≤ 0 werden auf 1
+angehoben). Bei Überschreitung bricht der Worker ab, protokolliert den Grund und
+meldet ihn ans Backend. Es gibt **keinen** „trotzdem weiter"-Pfad im Code.
+Tages- **und** Monatslimit werden vor *jedem einzelnen Empfänger* neu geprüft,
+nicht nur einmal vorab — sonst könnte eine parallel laufende zweite Kampagne
+daran vorbeirutschen.
+
+Die drei Grenzen tun Verschiedenes:
+
+| Grenze | Standard | Wogegen |
+|---|---|---|
+| je Aussendung | 300 | Ein Vertipper beim Text oder ein falscher Verteiler |
+| pro Tag | 1000 | Mehrere Aussendungen, die sich aufsummieren |
+| **pro Monat** | **500** | **Die Rechnung.** Das ist das Inklusivvolumen des Tarifs; alles darüber wird einzeln verrechnet. |
+
+Die Monatsgrenze ist die einzige, die nicht gegen einen Fehler schützt, sondern
+gegen Kosten. Deshalb wird sie im Verfassen-Screen **vorher** geprüft und
+blockiert das Senden, statt den Worker mitten im Versand abbrechen zu lassen —
+ein halb versendeter Alarm ist der unangenehmste aller Zustände. Der
+Verfassen-Screen zeigt dazu den Monatsstand *nach* dieser Aussendung mit einem
+Balken: „Monat: 178 von 500 Segmente".
+
+> Passend dazu gehört `ALERT_SEGMENTS_PER_MONTH` im Backend **unter** die
+> Obergrenze (Vorgabe 400 zu 500). Ein Alarm, der genau auf der Grenze
+> auslöst, kommt in dem Moment, in dem der Versand schon gesperrt ist — er
+> warnt dann nicht mehr, er meldet nur noch.
 
 **5. Kein automatischer Retry.**
 Der Worker liefert nie `Result.retry()`. Der Statusreceiver sendet nie nach.

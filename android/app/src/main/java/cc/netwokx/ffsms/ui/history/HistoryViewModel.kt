@@ -20,6 +20,8 @@ data class HistoryUiState(
     val campaigns: List<CampaignEntity> = emptyList(),
     val weekSegments: Int = 0,
     val monthSegments: Int = 0,
+    /** Monatsvolumen des Tarifs. 0 = unbekannt, dann ohne Nenner anzeigen. */
+    val monthLimit: Int = 0,
     val unsyncedCount: Int = 0,
     val exportResult: Boolean? = null,
 )
@@ -44,6 +46,13 @@ class HistoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             ServiceLocator.database(app).campaignDao().observeUnsyncedCount()
                 .collect { v -> _state.update { it.copy(unsyncedCount = v) } }
+        }
+        // Die Monatszahl ohne ihren Nenner sagt nichts. "178" ist harmlos oder
+        // knapp, je nachdem ob 500 oder 200 im Tarif sind.
+        viewModelScope.launch {
+            ServiceLocator.settings(app).settings.collect { s ->
+                _state.update { it.copy(monthLimit = s.maxSegmentsPerMonth) }
+            }
         }
     }
 

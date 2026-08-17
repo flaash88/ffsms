@@ -18,6 +18,10 @@ enum class AbortReason(val code: String, val message: String) {
         "limit_daily",
         "Tagesobergrenze ueberschritten",
     ),
+    LIMIT_MONTHLY(
+        "limit_monthly",
+        "Monatsobergrenze ueberschritten",
+    ),
     NO_PERMISSION(
         "no_permission",
         "Berechtigung zum SMS-Versand fehlt",

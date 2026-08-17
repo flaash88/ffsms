@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -154,6 +155,18 @@ fun ComposeScreen(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            if (state.overMonthLimit) {
+                Text(
+                    text = stringResource(
+                        R.string.compose_over_month,
+                        state.monthAfter,
+                        state.monthLimit,
+                    ),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             if (state.text.isBlank()) {
                 Text(
                     text = stringResource(R.string.compose_empty_text),
@@ -286,6 +299,11 @@ private fun CalculationCard(state: ComposeUiState) {
             ),
         )
 
+        // Der Monat, und zwar der Stand NACH dieser Aussendung. Die Zahl, die
+        // hier interessiert, ist nicht "wieviel habe ich verbraucht", sondern
+        // "wo stehe ich, wenn ich jetzt sende".
+        MonthBudget(state)
+
         if (state.info.segments > 0 && level == CostLevel.NEUTRAL) {
             Text(
                 text = stringResource(
@@ -305,6 +323,75 @@ private fun CalculationCard(state: ComposeUiState) {
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.ff.warn,
+            )
+        }
+    }
+}
+
+/**
+ * Monatsbudget mit Balken.
+ *
+ * Der Tarif enthaelt eine feste Zahl an SMS; alles darueber wird einzeln
+ * verrechnet. Das ist die Grenze, die am Monatsende auf der Rechnung steht -
+ * anders als die Tagesgrenze, die nur einen Ausrutscher abfaengt.
+ *
+ * Gezeigt wird der Stand NACH dieser Aussendung, mit dem Zuwachs als
+ * dunklerer Teil des Balkens. Wer 40 von 500 verbraucht hat und 480
+ * verschicken will, soll das sehen, bevor er tippt - und nicht danach,
+ * wenn der Worker mitten im Versand abbricht.
+ */
+@Composable
+private fun MonthBudget(state: ComposeUiState) {
+    val limit = state.monthLimit
+    if (limit <= 0) return
+
+    val ff = MaterialTheme.ff
+    val farbe = when {
+        state.overMonthLimit -> MaterialTheme.colorScheme.error
+        state.monthTight -> ff.warn
+        else -> ff.muted
+    }
+    val anteilVerbraucht = (state.monthUsed.toFloat() / limit).coerceIn(0f, 1f)
+    val anteilGesamt = (state.monthAfter.toFloat() / limit).coerceIn(0f, 1f)
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            NumberText(
+                text = stringResource(
+                    R.string.compose_month_budget,
+                    state.monthAfter,
+                    limit,
+                ),
+                color = farbe,
+                modifier = Modifier.weight(1f),
+            )
+            if (state.totalSegments > 0) {
+                NumberText(
+                    text = stringResource(R.string.compose_month_used_before, state.monthUsed),
+                    color = ff.muted,
+                )
+            }
+        }
+        // Zwei Balken uebereinander: hell der Stand nach dem Senden, dunkel
+        // der bereits verbrauchte Teil. Damit ist der Zuwachs dieser einen
+        // Aussendung als Differenz sichtbar.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .background(ff.hairline, RoundedCornerShape(4.dp)),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(anteilGesamt)
+                    .height(8.dp)
+                    .background(farbe.copy(alpha = 0.45f), RoundedCornerShape(4.dp)),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(anteilVerbraucht)
+                    .height(8.dp)
+                    .background(farbe, RoundedCornerShape(4.dp)),
             )
         }
     }

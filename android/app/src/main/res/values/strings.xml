@@ -90,6 +90,9 @@
     <string name="compose_send">Senden</string>
     <string name="compose_over_threshold">Über dem Warnschwellwert von %1$d SMS</string>
     <string name="compose_over_limit">Über der Obergrenze von %1$d Segmenten je Aussendung. Der Versand würde abgebrochen.</string>
+    <string name="compose_over_month">Das Monatsvolumen reicht nicht: %1$d von %2$d Segmenten. Senden ist gesperrt, bis die Obergrenze in den Einstellungen erhöht wird.</string>
+    <string name="compose_month_budget">Monat: %1$d von %2$d Segmenten</string>
+    <string name="compose_month_used_before">bisher %1$d</string>
     <string name="compose_no_recipients">Der gewählte Verteiler hat keine gültigen Empfänger.</string>
     <string name="compose_empty_text">Bitte zuerst einen Text eingeben.</string>
 
@@ -162,6 +165,9 @@
     <string name="settings_max_campaign_desc">Harte Grenze. Wird sie überschritten, bricht der Versand ab.</string>
     <string name="settings_max_day">Obergrenze pro Tag (Segmente)</string>
     <string name="settings_max_day_desc">Harte Grenze über alle Aussendungen eines Kalendertages.</string>
+    <string name="settings_max_month">Obergrenze pro Monat (Segmente)</string>
+    <string name="settings_max_month_desc">Das Inklusivvolumen des Tarifs. Alles darüber wird einzeln verrechnet.</string>
+    <string name="settings_month_label">Segmente diesen Monat, von %1$d</string>
     <string name="settings_today_label">Segmente heute, von %1$d</string>
     <string name="settings_saved">Gespeichert.</string>
     <string name="settings_number_invalid">Bitte eine Zahl größer als 0 eingeben.</string>

@@ -27,6 +27,8 @@ data class ComposeUiState(
     val savingBySanitize: Int = 0,
     val pending: PendingCampaign? = null,
     val message: String? = null,
+    /** Bereits verbrauchte Segmente im laufenden Kalendermonat. */
+    val monthUsed: Int = 0,
 ) {
     val totalSegments: Int get() = info.segments * recipientCount
 
@@ -36,12 +38,33 @@ data class ComposeUiState(
     val overWarnThreshold: Boolean
         get() = settings?.let { totalSegments >= it.warnThresholdSegments } ?: false
 
-    /** Ueber der harten Obergrenze - der Worker wuerde abbrechen. */
+    /** Ueber der harten Obergrenze je Aussendung - der Worker wuerde abbrechen. */
     val overHardLimit: Boolean
         get() = settings?.let { totalSegments > it.maxSegmentsPerCampaign } ?: false
 
+    /** Wo der Monat nach dieser Aussendung stehen wuerde. */
+    val monthAfter: Int get() = monthUsed + totalSegments
+
+    val monthLimit: Int get() = settings?.maxSegmentsPerMonth ?: 0
+
+    /**
+     * Sprengt diese Aussendung die Monatsgrenze?
+     *
+     * Der Worker bricht dann ab, und zwar mitten im Versand: die Grenze wird
+     * vor jedem einzelnen Empfaenger geprueft. Ein Teil haette also schon eine
+     * SMS bekommen, der Rest nicht - der unangenehmste aller Zustaende bei
+     * einer Alarmierung. Deshalb wird hier vorher blockiert, nicht dort
+     * hinterher abgebrochen.
+     */
+    val overMonthLimit: Boolean
+        get() = settings?.let { monthAfter > it.maxSegmentsPerMonth } ?: false
+
+    /** Ab drei Viertel des Monatsvolumens wird die Anzeige unruhig. */
+    val monthTight: Boolean
+        get() = settings?.let { monthAfter * 4 >= it.maxSegmentsPerMonth * 3 } ?: false
+
     val canSend: Boolean
-        get() = text.isNotBlank() && recipientCount > 0 && !overHardLimit
+        get() = text.isNotBlank() && recipientCount > 0 && !overHardLimit && !overMonthLimit
 }
 
 class ComposeViewModel(app: Application) : AndroidViewModel(app) {
@@ -68,6 +91,14 @@ class ComposeViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             settingsRepo.settings.collect { s -> _state.update { it.copy(settings = s) } }
+        }
+        // Der Monatsverbrauch kommt aus der Datenbank und aktualisiert sich
+        // von selbst. Er steht im Verfassen-Screen, weil dort die Entscheidung
+        // fällt - nicht erst im Verlauf, wo man ihn nachschlagen muesste.
+        viewModelScope.launch {
+            campaignRepo.observeMonthSegments().collect { used ->
+                _state.update { it.copy(monthUsed = used) }
+            }
         }
     }
 

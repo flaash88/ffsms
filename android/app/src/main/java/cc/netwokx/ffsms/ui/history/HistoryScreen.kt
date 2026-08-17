@@ -96,6 +96,7 @@ fun HistoryScreen(
             UsageCard(
                 week = state.weekSegments,
                 month = state.monthSegments,
+                monthLimit = state.monthLimit,
                 unsynced = state.unsyncedCount,
             )
 
@@ -126,7 +127,7 @@ fun HistoryScreen(
  * jederzeit sehen koennen, auch wenn der Server steht.
  */
 @Composable
-private fun UsageCard(week: Int, month: Int, unsynced: Int) {
+private fun UsageCard(week: Int, month: Int, monthLimit: Int, unsynced: Int) {
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -145,7 +146,7 @@ private fun UsageCard(week: Int, month: Int, unsynced: Int) {
             )
             StatTile(
                 label = stringResource(R.string.history_usage_month),
-                value = month.toString(),
+                value = if (monthLimit > 0) "$month/$monthLimit" else month.toString(),
                 unit = stringResource(R.string.history_usage_unit),
                 modifier = Modifier.weight(1f),
             )

@@ -27,6 +27,11 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  * @param maxSegmentsPerDay harte Obergrenze pro Kalendertag, ueber alle
  *        Kampagnen hinweg. Das ist die Sicherung, die einen 2100er-Vorfall
  *        auch dann noch stoppt, wenn alles andere versagt hat.
+ * @param maxSegmentsPerMonth harte Obergrenze pro Kalendermonat. Die
+ *        eigentliche Kostengrenze: der Tarif enthaelt eine feste Zahl an SMS,
+ *        alles darueber wird einzeln verrechnet. Anders als die Tagesgrenze
+ *        ist das keine Notbremse gegen einen Ausrutscher, sondern die Zahl,
+ *        die auf der Rechnung steht.
  * @param pinProtected ob Serverzugang und Obergrenzen mit einer PIN gegen
  *        versehentliches Verstellen gesichert sind. Nur die Tatsache, nie
  *        die PIN selbst - die verlaesst das Repository nicht.
@@ -39,6 +44,7 @@ data class AppSettings(
     val warnThresholdSegments: Int,
     val maxSegmentsPerCampaign: Int,
     val maxSegmentsPerDay: Int,
+    val maxSegmentsPerMonth: Int,
     val pinProtected: Boolean,
 ) {
     val backendConfigured: Boolean
@@ -48,6 +54,15 @@ data class AppSettings(
         const val DEFAULT_WARN_THRESHOLD = 100
         const val DEFAULT_MAX_PER_CAMPAIGN = 300
         const val DEFAULT_MAX_PER_DAY = 1000
+
+        /**
+         * 500 Segmente je Monat.
+         *
+         * Kein runder Wunschwert, sondern das Inklusivvolumen des Tarifs.
+         * Alles darueber kostet je SMS extra - und genau dort entsteht die
+         * Rechnung, die niemand erklaeren kann.
+         */
+        const val DEFAULT_MAX_PER_MONTH = 500
     }
 }
 
@@ -61,6 +76,7 @@ class SettingsRepository(private val context: Context) {
         val WARN_THRESHOLD = intPreferencesKey("warn_threshold")
         val MAX_PER_CAMPAIGN = intPreferencesKey("max_per_campaign")
         val MAX_PER_DAY = intPreferencesKey("max_per_day")
+        val MAX_PER_MONTH = intPreferencesKey("max_per_month")
         val ADMIN_PIN = stringPreferencesKey("admin_pin")
     }
 
@@ -75,6 +91,7 @@ class SettingsRepository(private val context: Context) {
             warnThresholdSegments = p[Keys.WARN_THRESHOLD] ?: AppSettings.DEFAULT_WARN_THRESHOLD,
             maxSegmentsPerCampaign = p[Keys.MAX_PER_CAMPAIGN] ?: AppSettings.DEFAULT_MAX_PER_CAMPAIGN,
             maxSegmentsPerDay = p[Keys.MAX_PER_DAY] ?: AppSettings.DEFAULT_MAX_PER_DAY,
+            maxSegmentsPerMonth = p[Keys.MAX_PER_MONTH] ?: AppSettings.DEFAULT_MAX_PER_MONTH,
             pinProtected = p[Keys.ADMIN_PIN] != null,
         )
     }
@@ -99,6 +116,8 @@ class SettingsRepository(private val context: Context) {
     suspend fun setMaxPerCampaign(value: Int) = put(Keys.MAX_PER_CAMPAIGN, value.coerceAtLeast(1))
 
     suspend fun setMaxPerDay(value: Int) = put(Keys.MAX_PER_DAY, value.coerceAtLeast(1))
+
+    suspend fun setMaxPerMonth(value: Int) = put(Keys.MAX_PER_MONTH, value.coerceAtLeast(1))
 
     /**
      * PIN setzen.

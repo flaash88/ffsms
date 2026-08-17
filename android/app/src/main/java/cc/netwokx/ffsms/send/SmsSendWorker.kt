@@ -99,8 +99,15 @@ class SmsSendWorker(
         for (recipient in recipients) {
             // Tageslimit bei JEDEM Empfaenger neu pruefen, nicht nur einmal
             // vorab: eine zweite Kampagne kann parallel gelaufen sein.
-            if (dailySegmentsUsed() + segmentsPerRecipient > limits().maxSegmentsPerDay) {
+            val limits = limits()
+            if (dailySegmentsUsed() + segmentsPerRecipient > limits.maxSegmentsPerDay) {
                 return abort(campaign, AbortReason.LIMIT_DAILY, dispatchedSoFar = dispatched)
+            }
+            // Auch die Monatsgrenze wird vor JEDEM Empfaenger neu geprueft.
+            // Sonst koennte eine zweite, parallel laufende Aussendung daran
+            // vorbeirutschen - und genau am Monatsende, wo es zaehlt.
+            if (monthlySegmentsUsed() + segmentsPerRecipient > limits.maxSegmentsPerMonth) {
+                return abort(campaign, AbortReason.LIMIT_MONTHLY, dispatchedSoFar = dispatched)
             }
 
             val now = System.currentTimeMillis()
@@ -167,6 +174,9 @@ class SmsSendWorker(
         if (dailySegmentsUsed() + campaign.totalSegments > limits.maxSegmentsPerDay) {
             return AbortReason.LIMIT_DAILY
         }
+        if (monthlySegmentsUsed() + campaign.totalSegments > limits.maxSegmentsPerMonth) {
+            return AbortReason.LIMIT_MONTHLY
+        }
         return null
     }
 
@@ -175,6 +185,11 @@ class SmsSendWorker(
     private suspend fun dailySegmentsUsed(): Int {
         val today = TimeRanges.today()
         return campaignDao.segmentsBetween(today.from, today.to)
+    }
+
+    private suspend fun monthlySegmentsUsed(): Int {
+        val month = TimeRanges.thisMonth()
+        return campaignDao.segmentsBetween(month.from, month.to)
     }
 
     private suspend fun abort(

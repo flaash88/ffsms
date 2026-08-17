@@ -34,6 +34,7 @@ sealed interface UpdateState {
 data class SettingsUiState(
     val settings: AppSettings? = null,
     val segmentsToday: Int = 0,
+    val segmentsThisMonth: Int = 0,
     val test: ConnectionTest = ConnectionTest.Idle,
     val saved: Boolean = false,
     val update: UpdateState = UpdateState.Idle,
@@ -60,6 +61,11 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             _state.update { it.copy(segmentsToday = campaigns.segmentsToday()) }
+        }
+        viewModelScope.launch {
+            campaigns.observeMonthSegments().collect { used ->
+                _state.update { it.copy(segmentsThisMonth = used) }
+            }
         }
     }
 
@@ -105,6 +111,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setMaxPerCampaign(v: Int) = update { repo.setMaxPerCampaign(v) }
 
     fun setMaxPerDay(v: Int) = update { repo.setMaxPerDay(v) }
+
+    fun setMaxPerMonth(v: Int) = update { repo.setMaxPerMonth(v) }
 
     /**
      * Prueft Erreichbarkeit und API-Key gegen /api/v1/health.

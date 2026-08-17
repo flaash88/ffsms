@@ -157,16 +157,17 @@ fun SettingsScreen(
             // die wichtigste Zahl der App an zwei Stellen in derselben Form -
             // und ein verstellter Grenzwert faellt auf, weil die Beschriftung
             // daneben mitwandert.
+            // Der Monat zuerst: das ist die Grenze, die am Monatsende auf der
+            // Rechnung steht. Die Tagesgrenze faengt nur einen Ausrutscher ab.
+            CostTile(
+                value = state.segmentsThisMonth,
+                label = stringResource(R.string.settings_month_label, settings.maxSegmentsPerMonth),
+                level = budgetLevel(state.segmentsThisMonth, settings.maxSegmentsPerMonth),
+            )
             CostTile(
                 value = state.segmentsToday,
                 label = stringResource(R.string.settings_today_label, settings.maxSegmentsPerDay),
-                level = if (state.segmentsToday >= settings.maxSegmentsPerDay) {
-                    CostLevel.CRITICAL
-                } else if (state.segmentsToday * 2 >= settings.maxSegmentsPerDay) {
-                    CostLevel.WARN
-                } else {
-                    CostLevel.NEUTRAL
-                },
+                level = budgetLevel(state.segmentsToday, settings.maxSegmentsPerDay),
             )
 
             NumberField(
@@ -186,6 +187,12 @@ fun SettingsScreen(
                 label = stringResource(R.string.settings_max_day),
                 description = stringResource(R.string.settings_max_day_desc),
                 onCommit = vm::setMaxPerDay,
+            )
+            NumberField(
+                value = settings.maxSegmentsPerMonth,
+                label = stringResource(R.string.settings_max_month),
+                description = stringResource(R.string.settings_max_month_desc),
+                onCommit = vm::setMaxPerMonth,
             )
 
             HorizontalDivider()
@@ -264,6 +271,19 @@ fun SettingsScreen(
 @Composable
 private fun SectionTitle(text: String) {
     SectionLabel(text)
+}
+
+/**
+ * Ab drei Vierteln des Volumens bernstein, ab dem Limit rot.
+ *
+ * Die Halbzeit waere zu frueh: bei 250 von 500 mitten im Monat ist alles in
+ * Ordnung, und eine Warnung, die dann schon leuchtet, leuchtet ab da immer.
+ */
+private fun budgetLevel(used: Int, limit: Int): CostLevel = when {
+    limit <= 0 -> CostLevel.NEUTRAL
+    used >= limit -> CostLevel.CRITICAL
+    used * 4 >= limit * 3 -> CostLevel.WARN
+    else -> CostLevel.NEUTRAL
 }
 
 /**
